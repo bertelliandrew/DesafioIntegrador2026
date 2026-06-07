@@ -1,150 +1,171 @@
-const db = require("../dados");
+const prisma = require("../prisma/client");
 
-function listarAssinaturas(req, res) {
-  res.json(db.assinaturas);
-}
-
-function buscarAssinatura(req, res) {
-  const id = Number(req.params.id);
-  const assinatura = db.assinaturas.find((a) => a.id === id);
-
-  if (!assinatura) {
-    return res.status(404).json({ erro: "Assinatura não encontrada." });
-  }
-
-  res.json(assinatura);
-}
-
-function criarAssinatura(req, res) {
-  const { clienteId, planoId, quantidadeFirewalls, ciclo } = req.body;
-  const cliente = db.clientes.find((c) => c.id === Number(clienteId));
-  const plano = db.planos.find((p) => p.id === Number(planoId));
-  const quantidade = Number(quantidadeFirewalls);
-
-  if (!cliente) {
-    return res.status(400).json({ erro: "Cliente não encontrado." });
-  }
-
-  if (!plano) {
-    return res.status(400).json({ erro: "Plano de firewall não encontrado." });
-  }
-
-  if (quantidade > plano.limiteDispositivos) {
-    return res.status(400).json({ erro: "A quantidade informada ultrapassa o limite do plano." });
-  }
-
-  const novaAssinatura = {
-    id: db.gerarIdAssinatura(),
-    clienteId: cliente.id,
-    nomeCliente: cliente.nome,
-    planoId: plano.id,
-    nomePlano: plano.nome,
-    quantidadeFirewalls: quantidade,
-    ciclo: ciclo || "mensal",
-    status: "ativa",
-    valorMensal: Number((plano.precoMensal * quantidade).toFixed(2)),
-    motivoCancelamento: null,
-    criadoEm: new Date().toISOString(),
-    canceladoEm: null,
+function serializarAssinatura(assinatura) {
+  return {
+    ...assinatura,
+    nomeCliente: assinatura.cliente?.nome,
+    nomePlano: assinatura.plano?.nome,
   };
-
-  db.assinaturas.push(novaAssinatura);
-  res.status(201).json(novaAssinatura);
 }
 
-function atualizarAssinatura(req, res) {
-  const id = Number(req.params.id);
-  const index = db.assinaturas.findIndex((a) => a.id === id);
+const include = {
+  cliente: { select: { nome: true } },
+  plano:   { select: { nome: true } },
+};
 
-  if (index === -1) {
-    return res.status(404).json({ erro: "Assinatura não encontrada." });
+async function listarAssinaturas(req, res) {
+  try {
+    const assinaturas = await prisma.assinatura.findMany({
+      include,
+      orderBy: { criadoEm: "desc" },
+    });
+    res.json(assinaturas.map(serializarAssinatura));
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao listar assinaturas." });
   }
-
-  if (db.assinaturas[index].status === "cancelada") {
-    return res.status(400).json({ erro: "Assinaturas canceladas não podem ser alteradas." });
-  }
-
-  const { clienteId, planoId, quantidadeFirewalls, ciclo } = req.body;
-  const cliente = db.clientes.find((c) => c.id === Number(clienteId));
-  const plano = db.planos.find((p) => p.id === Number(planoId));
-  const quantidade = Number(quantidadeFirewalls);
-
-  if (!cliente) {
-    return res.status(400).json({ erro: "Cliente não encontrado." });
-  }
-
-  if (!plano) {
-    return res.status(400).json({ erro: "Plano de firewall não encontrado." });
-  }
-
-  if (quantidade > plano.limiteDispositivos) {
-    return res.status(400).json({ erro: "A quantidade informada ultrapassa o limite do plano." });
-  }
-
-  db.assinaturas[index] = {
-    ...db.assinaturas[index],
-    clienteId: cliente.id,
-    nomeCliente: cliente.nome,
-    planoId: plano.id,
-    nomePlano: plano.nome,
-    quantidadeFirewalls: quantidade,
-    ciclo: ciclo || "mensal",
-    valorMensal: Number((plano.precoMensal * quantidade).toFixed(2)),
-  };
-
-  res.json(db.assinaturas[index]);
 }
 
-function cancelarAssinatura(req, res) {
-  const id = Number(req.params.id);
-  const index = db.assinaturas.findIndex((a) => a.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({ erro: "Assinatura não encontrada." });
+async function buscarAssinatura(req, res) {
+  try {
+    const id = Number(req.params.id);
+    const assinatura = await prisma.assinatura.findUnique({ where: { id }, include });
+    if (!assinatura) return res.status(404).json({ erro: "Assinatura não encontrada." });
+    res.json(serializarAssinatura(assinatura));
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao buscar assinatura." });
   }
-
-  if (db.assinaturas[index].status === "cancelada") {
-    return res.status(400).json({ erro: "Essa assinatura já está cancelada." });
-  }
-
-  db.assinaturas[index] = {
-    ...db.assinaturas[index],
-    status: "cancelada",
-    motivoCancelamento: req.body.motivoCancelamento.trim(),
-    canceladoEm: new Date().toISOString(),
-  };
-
-  res.json(db.assinaturas[index]);
 }
 
-function reativarAssinatura(req, res) {
-  const id = Number(req.params.id);
-  const index = db.assinaturas.findIndex((a) => a.id === id);
+async function criarAssinatura(req, res) {
+  try {
+    const { clienteId, planoId, quantidadeFirewalls, ciclo } = req.body;
+    const quantidade = Number(quantidadeFirewalls);
 
-  if (index === -1) {
-    return res.status(404).json({ erro: "Assinatura não encontrada." });
+    const cliente = await prisma.cliente.findUnique({ where: { id: Number(clienteId) } });
+    if (!cliente) return res.status(400).json({ erro: "Cliente não encontrado." });
+
+    const plano = await prisma.plano.findUnique({ where: { id: Number(planoId) } });
+    if (!plano) return res.status(400).json({ erro: "Plano de firewall não encontrado." });
+
+    if (quantidade > plano.limiteDispositivos) {
+      return res.status(400).json({ erro: "A quantidade informada ultrapassa o limite do plano." });
+    }
+
+    const assinatura = await prisma.assinatura.create({
+      data: {
+        clienteId: cliente.id,
+        planoId: plano.id,
+        quantidadeFirewalls: quantidade,
+        ciclo: ciclo || "mensal",
+        status: "ativa",
+        valorMensal: Number((plano.precoMensal * quantidade).toFixed(2)),
+      },
+      include,
+    });
+
+    res.status(201).json(serializarAssinatura(assinatura));
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao criar assinatura." });
   }
-
-  db.assinaturas[index] = {
-    ...db.assinaturas[index],
-    status: "ativa",
-    motivoCancelamento: null,
-    canceladoEm: null,
-  };
-
-  res.json(db.assinaturas[index]);
 }
 
-function deletarAssinatura(req, res) {
-  const id = Number(req.params.id);
-  const index = db.assinaturas.findIndex((a) => a.id === id);
+async function atualizarAssinatura(req, res) {
+  try {
+    const id = Number(req.params.id);
 
-  if (index === -1) {
-    return res.status(404).json({ erro: "Assinatura não encontrada." });
+    const existente = await prisma.assinatura.findUnique({ where: { id } });
+    if (!existente) return res.status(404).json({ erro: "Assinatura não encontrada." });
+    if (existente.status === "cancelada") {
+      return res.status(400).json({ erro: "Assinaturas canceladas não podem ser alteradas." });
+    }
+
+    const { clienteId, planoId, quantidadeFirewalls, ciclo } = req.body;
+    const quantidade = Number(quantidadeFirewalls);
+
+    const cliente = await prisma.cliente.findUnique({ where: { id: Number(clienteId) } });
+    if (!cliente) return res.status(400).json({ erro: "Cliente não encontrado." });
+
+    const plano = await prisma.plano.findUnique({ where: { id: Number(planoId) } });
+    if (!plano) return res.status(400).json({ erro: "Plano de firewall não encontrado." });
+
+    if (quantidade > plano.limiteDispositivos) {
+      return res.status(400).json({ erro: "A quantidade informada ultrapassa o limite do plano." });
+    }
+
+    const assinatura = await prisma.assinatura.update({
+      where: { id },
+      data: {
+        clienteId: cliente.id,
+        planoId: plano.id,
+        quantidadeFirewalls: quantidade,
+        ciclo: ciclo || "mensal",
+        valorMensal: Number((plano.precoMensal * quantidade).toFixed(2)),
+      },
+      include,
+    });
+
+    res.json(serializarAssinatura(assinatura));
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao atualizar assinatura." });
   }
+}
 
-  db.assinaturas.splice(index, 1);
-  res.json({ mensagem: "Assinatura removida com sucesso." });
+async function cancelarAssinatura(req, res) {
+  try {
+    const id = Number(req.params.id);
+
+    const existente = await prisma.assinatura.findUnique({ where: { id } });
+    if (!existente) return res.status(404).json({ erro: "Assinatura não encontrada." });
+    if (existente.status === "cancelada") {
+      return res.status(400).json({ erro: "Essa assinatura já está cancelada." });
+    }
+
+    const assinatura = await prisma.assinatura.update({
+      where: { id },
+      data: {
+        status: "cancelada",
+        motivoCancelamento: req.body.motivoCancelamento.trim(),
+        canceladoEm: new Date(),
+      },
+      include,
+    });
+
+    res.json(serializarAssinatura(assinatura));
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao cancelar assinatura." });
+  }
+}
+
+async function reativarAssinatura(req, res) {
+  try {
+    const id = Number(req.params.id);
+
+    const assinatura = await prisma.assinatura.update({
+      where: { id },
+      data: {
+        status: "ativa",
+        motivoCancelamento: null,
+        canceladoEm: null,
+      },
+      include,
+    });
+
+    res.json(serializarAssinatura(assinatura));
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ erro: "Assinatura não encontrada." });
+    res.status(500).json({ erro: "Erro ao reativar assinatura." });
+  }
+}
+
+async function deletarAssinatura(req, res) {
+  try {
+    const id = Number(req.params.id);
+    await prisma.assinatura.delete({ where: { id } });
+    res.json({ mensagem: "Assinatura removida com sucesso." });
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ erro: "Assinatura não encontrada." });
+    res.status(500).json({ erro: "Erro ao deletar assinatura." });
+  }
 }
 
 module.exports = {

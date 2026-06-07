@@ -1,78 +1,100 @@
-# FirewallSign — Assinaturas de Firewall
+# FirewallSign — Sistema de Assinaturas de Planos de Firewall
 
-Sistema web do Desafio Integrador com tema de assinatura de planos de firewall. A aplicação mantém a separação entre frontend e backend, com Next.js + TypeScript no frontend e Node.js + Express no backend.
-
-O projeto está sem banco de dados nesta etapa. Os dados ficam em memória no backend para facilitar a apresentação inicial e permitir que a persistência seja adicionada depois.
-
----
-
-## Tema do sistema
-
-A empresa fictícia vende assinaturas de firewall em três tipos de planos:
-
-1. **Firewall Essencial** — plano inicial para pequenos ambientes.
-2. **Firewall Profissional** — plano intermediário para empresas com mais dispositivos.
-3. **Firewall Enterprise** — plano completo para ambientes críticos.
-
-O sistema permite cadastrar clientes, manter planos, registrar assinaturas e acompanhar cancelamentos. A taxa de cancelamento é calculada como indicador operacional simples nesta versão.
+Sistema completo para gerenciamento de clientes, planos e assinaturas de firewall.  
+**Stack:** Node.js + Express + Prisma + SQLite · Next.js 14 (App Router) + TypeScript
 
 ---
 
-## Estrutura
+## Estrutura do Projeto
 
-```text
-DesafioIntegrador2026-main/
+```
+DesafioIntegrador2026/
 ├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma       ← Modelos do banco de dados
+│   │   └── seed.js             ← Dados iniciais para popular o banco
 │   ├── src/
-│   │   ├── server.js
-│   │   ├── dados.js
-│   │   ├── controllers/
-│   │   │   ├── assinaturaController.js
-│   │   │   ├── clienteController.js
-│   │   │   ├── planoController.js
-│   │   │   └── relatorioController.js
-│   │   ├── middlewares/
-│   │   │   └── validacoes.js
-│   │   └── routes/
-│   │       ├── assinaturaRoutes.js
-│   │       ├── clienteRoutes.js
-│   │       ├── planoRoutes.js
-│   │       └── relatorioRoutes.js
+│   │   ├── controllers/        ← Lógica de negócio (Prisma)
+│   │   ├── middlewares/        ← Validações de entrada
+│   │   ├── prisma/
+│   │   │   └── client.js       ← Instância singleton do PrismaClient
+│   │   ├── routes/             ← Definição de rotas Express
+│   │   └── server.js           ← Entry point da API
+│   ├── .env.example
 │   └── package.json
 │
 └── frontend-next/
     ├── src/
-    │   ├── app/
-    │   │   ├── page.tsx
-    │   │   ├── clientes/page.tsx
-    │   │   ├── planos/page.tsx
-    │   │   ├── assinaturas/page.tsx
-    │   │   ├── relatorios/page.tsx
-    │   │   ├── globals.css
-    │   │   └── layout.tsx
+    │   ├── app/                ← Páginas (App Router)
+    │   │   ├── clientes/
+    │   │   ├── planos/
+    │   │   ├── assinaturas/
+    │   │   └── relatorios/
     │   ├── components/
-    │   │   ├── Navbar.tsx
-    │   │   └── Navbar.module.css
+    │   │   └── Navbar.tsx
     │   └── lib/
-    │       └── api.ts
+    │       └── api.ts          ← Helper de fetch + tipos TypeScript
     └── package.json
 ```
 
 ---
 
-## Como rodar
+## Banco de Dados — Prisma + SQLite
 
-### 1. Backend — porta 3001
+O banco de dados é gerenciado pelo **Prisma ORM** com **SQLite** como provider.  
+O arquivo `dev.db` é gerado automaticamente e fica dentro de `backend/prisma/`.
+
+### Modelos
+
+| Tabela        | Campos principais                                                             |
+|---------------|------------------------------------------------------------------------------|
+| `clientes`    | id, nome, email (único), cidade, estado, pais, criadoEm                     |
+| `planos`      | id, nome, descricao, precoMensal, limiteDispositivos, suporte, recursos (JSON) |
+| `assinaturas` | id, clienteId (FK), planoId (FK), quantidade, ciclo, status, valorMensal   |
+
+### Relações
+
+```
+Cliente  ──< Assinatura >── Plano
+```
+
+---
+
+## Como Rodar
+
+### Pré-requisitos
+
+- Node.js 18+
+- npm
+
+### 1. Backend
 
 ```bash
 cd backend
+
+# Instalar dependências
 npm install
-npm start
+
+# Configurar variável de ambiente
+cp .env.example .env
+
+# Criar o banco e rodar as migrations
+npx prisma migrate dev --name init
+
+# Popular com dados iniciais
+node prisma/seed.js
+
+# Iniciar servidor (porta 3001)
+npm run dev
 ```
 
-A API ficará disponível em `http://localhost:3001`.
+**Ou use o comando setup (faz tudo de uma vez):**
 
-### 2. Frontend — porta 3000
+```bash
+npm run setup
+```
+
+### 2. Frontend (Next.js — porta 3000)
 
 ```bash
 cd frontend-next
@@ -81,13 +103,86 @@ npm install
 npm run dev
 ```
 
-Acesse `http://localhost:3000`.
+Acesse: **http://localhost:3000**
 
 ---
 
-## Variável de ambiente do frontend
+## Scripts do Backend
 
-Arquivo: `frontend-next/.env.local`
+| Comando              | Descrição                                            |
+|----------------------|------------------------------------------------------|
+| `npm run dev`        | Inicia o servidor com nodemon (hot reload)           |
+| `npm run start`      | Inicia o servidor sem hot reload                     |
+| `npm run db:migrate` | Cria/aplica migrations do Prisma                     |
+| `npm run db:seed`    | Popula o banco com dados iniciais                    |
+| `npm run db:studio`  | Abre o Prisma Studio (GUI visual do banco)           |
+| `npm run db:reset`   | Reseta o banco e repopula do zero                    |
+| `npm run setup`      | install + migrate + seed (primeira vez)              |
+
+### Prisma Studio
+
+Para inspecionar o banco visualmente no browser:
+
+```bash
+cd backend
+npx prisma studio
+```
+
+---
+
+## Endpoints da API
+
+### Clientes
+
+| Método | Rota                | Descrição                     |
+|--------|---------------------|-------------------------------|
+| GET    | /api/clientes       | Listar todos os clientes      |
+| GET    | /api/clientes/:id   | Buscar cliente por ID         |
+| POST   | /api/clientes       | Criar novo cliente            |
+| PUT    | /api/clientes/:id   | Atualizar cliente             |
+| DELETE | /api/clientes/:id   | Remover cliente               |
+
+### Planos
+
+| Método | Rota              | Descrição                   |
+|--------|-------------------|-----------------------------|
+| GET    | /api/planos       | Listar todos os planos      |
+| GET    | /api/planos/:id   | Buscar plano por ID         |
+| POST   | /api/planos       | Criar novo plano            |
+| PUT    | /api/planos/:id   | Atualizar plano             |
+| DELETE | /api/planos/:id   | Remover plano               |
+
+### Assinaturas
+
+| Método | Rota                          | Descrição                    |
+|--------|-------------------------------|------------------------------|
+| GET    | /api/assinaturas              | Listar todas as assinaturas  |
+| GET    | /api/assinaturas/:id          | Buscar assinatura por ID     |
+| POST   | /api/assinaturas              | Criar nova assinatura        |
+| PUT    | /api/assinaturas/:id          | Atualizar assinatura         |
+| PUT    | /api/assinaturas/:id/cancelar | Cancelar assinatura          |
+| PUT    | /api/assinaturas/:id/reativar | Reativar assinatura          |
+| DELETE | /api/assinaturas/:id          | Remover assinatura           |
+
+### Relatórios
+
+| Método | Rota           | Descrição                              |
+|--------|----------------|----------------------------------------|
+| GET    | /api/relatorios | Relatório geral: receita, planos, etc |
+
+---
+
+## Variáveis de Ambiente
+
+### Backend (`backend/.env`)
+
+```env
+DATABASE_URL="file:./dev.db"
+NODE_ENV=development
+PORT=3001
+```
+
+### Frontend (`frontend-next/.env.local`)
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
@@ -95,75 +190,9 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api
 
 ---
 
-## Funcionalidades
+## Observações
 
-### Clientes
-
-- Listagem de clientes.
-- Cadastro de cliente.
-- Edição de cliente.
-- Exclusão de cliente quando não houver assinatura vinculada.
-- Validação de campos obrigatórios e formato de e-mail.
-
-### Planos de firewall
-
-- Três planos iniciais já cadastrados no backend.
-- Cadastro de novos planos.
-- Edição de preço, limite, suporte, descrição e recursos.
-- Exclusão de plano quando não houver assinatura vinculada.
-
-### Assinaturas
-
-- Criação de assinatura vinculando cliente e plano.
-- Cálculo automático do valor mensal com base no plano e na quantidade de firewalls.
-- Edição de assinatura ativa.
-- Cancelamento com motivo obrigatório.
-- Reativação de assinatura cancelada.
-- Exclusão de assinatura.
-
-### Relatórios
-
-- Total de clientes.
-- Total de planos.
-- Total de assinaturas.
-- Assinaturas ativas.
-- Assinaturas canceladas.
-- Receita mensal ativa.
-- Taxa de cancelamento.
-- Assinaturas por plano.
-- Motivos de cancelamento.
-- Clientes por estado.
-
----
-
-## Endpoints do backend
-
-| Método | URL | Descrição |
-|---|---|---|
-| GET | `/api/clientes` | Listar clientes |
-| GET | `/api/clientes/:id` | Buscar cliente |
-| POST | `/api/clientes` | Criar cliente |
-| PUT | `/api/clientes/:id` | Atualizar cliente |
-| DELETE | `/api/clientes/:id` | Remover cliente |
-| GET | `/api/planos` | Listar planos |
-| GET | `/api/planos/:id` | Buscar plano |
-| POST | `/api/planos` | Criar plano |
-| PUT | `/api/planos/:id` | Atualizar plano |
-| DELETE | `/api/planos/:id` | Remover plano |
-| GET | `/api/assinaturas` | Listar assinaturas |
-| GET | `/api/assinaturas/:id` | Buscar assinatura |
-| POST | `/api/assinaturas` | Criar assinatura |
-| PUT | `/api/assinaturas/:id` | Atualizar assinatura ativa |
-| PUT | `/api/assinaturas/:id/cancelar` | Cancelar assinatura |
-| PUT | `/api/assinaturas/:id/reativar` | Reativar assinatura |
-| DELETE | `/api/assinaturas/:id` | Remover assinatura |
-| GET | `/api/relatorios` | Gerar indicadores gerenciais |
-
----
-
-## Observações para a próxima etapa
-
-- Adicionar banco de dados relacional quando a modelagem estiver fechada.
-- Criar migrations e entidades/tabelas para clientes, planos, assinaturas e cancelamentos.
-- Integrar autenticação se o grupo decidir controlar acesso por perfil.
-- Implementar a parte preditiva apenas quando houver base de dados suficiente e o modelo for definido pelo grupo.
+- O SQLite gera um arquivo `dev.db` local — sem necessidade de instalar nenhum servidor de banco.
+- O `dev.db` está no `.gitignore`; cada desenvolvedor roda `npm run setup` para criar o banco localmente.
+- As migrations ficam versionadas em `prisma/migrations/` e devem ser commitadas.
+- O campo `recursos` dos planos é armazenado como JSON serializado (string) no SQLite e deserializado automaticamente nas respostas da API.

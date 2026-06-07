@@ -1,99 +1,91 @@
-const db = require("../dados");
+const prisma = require("../prisma/client");
 
-function listarClientes(req, res) {
-  res.json(db.clientes);
+async function listarClientes(req, res) {
+  try {
+    const clientes = await prisma.cliente.findMany({
+      orderBy: { criadoEm: "desc" },
+    });
+    res.json(clientes);
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao listar clientes." });
+  }
 }
 
-function buscarCliente(req, res) {
-  const id = Number(req.params.id);
-  const cliente = db.clientes.find((c) => c.id === id);
-
-  if (!cliente) {
-    return res.status(404).json({ erro: "Cliente não encontrado." });
+async function buscarCliente(req, res) {
+  try {
+    const id = Number(req.params.id);
+    const cliente = await prisma.cliente.findUnique({ where: { id } });
+    if (!cliente) return res.status(404).json({ erro: "Cliente não encontrado." });
+    res.json(cliente);
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao buscar cliente." });
   }
-
-  res.json(cliente);
 }
 
-function criarCliente(req, res) {
-  const { nome, email, cidade, estado, pais } = req.body;
-  const emailNormalizado = email.trim().toLowerCase();
+async function criarCliente(req, res) {
+  try {
+    const { nome, email, cidade, estado, pais } = req.body;
+    const emailNormalizado = email.trim().toLowerCase();
 
-  const emailJaExiste = db.clientes.find((c) => c.email.toLowerCase() === emailNormalizado);
-  if (emailJaExiste) {
-    return res.status(400).json({ erro: "Já existe um cliente com esse e-mail." });
-  }
+    const cliente = await prisma.cliente.create({
+      data: {
+        nome: nome.trim(),
+        email: emailNormalizado,
+        cidade: cidade.trim(),
+        estado: estado.trim().toUpperCase(),
+        pais: pais.trim(),
+      },
+    });
 
-  const novoCliente = {
-    id: db.gerarIdCliente(),
-    nome: nome.trim(),
-    email: emailNormalizado,
-    cidade: cidade.trim(),
-    estado: estado.trim().toUpperCase(),
-    pais: pais.trim(),
-    criadoEm: new Date().toISOString(),
-  };
-
-  db.clientes.push(novoCliente);
-  res.status(201).json(novoCliente);
-}
-
-function atualizarCliente(req, res) {
-  const id = Number(req.params.id);
-  const index = db.clientes.findIndex((c) => c.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({ erro: "Cliente não encontrado." });
-  }
-
-  const { nome, email, cidade, estado, pais } = req.body;
-  const emailNormalizado = email.trim().toLowerCase();
-
-  const emailDuplicado = db.clientes.find((c) => c.email.toLowerCase() === emailNormalizado && c.id !== id);
-  if (emailDuplicado) {
-    return res.status(400).json({ erro: "Esse e-mail já está sendo usado por outro cliente." });
-  }
-
-  db.clientes[index] = {
-    ...db.clientes[index],
-    nome: nome.trim(),
-    email: emailNormalizado,
-    cidade: cidade.trim(),
-    estado: estado.trim().toUpperCase(),
-    pais: pais.trim(),
-  };
-
-  db.assinaturas.forEach((assinatura) => {
-    if (assinatura.clienteId === id) {
-      assinatura.nomeCliente = db.clientes[index].nome;
+    res.status(201).json(cliente);
+  } catch (e) {
+    if (e.code === "P2002") {
+      return res.status(400).json({ erro: "Já existe um cliente com esse e-mail." });
     }
-  });
-
-  res.json(db.clientes[index]);
+    res.status(500).json({ erro: "Erro ao criar cliente." });
+  }
 }
 
-function deletarCliente(req, res) {
-  const id = Number(req.params.id);
-  const possuiAssinatura = db.assinaturas.some((assinatura) => assinatura.clienteId === id);
+async function atualizarCliente(req, res) {
+  try {
+    const id = Number(req.params.id);
+    const { nome, email, cidade, estado, pais } = req.body;
+    const emailNormalizado = email.trim().toLowerCase();
 
-  if (possuiAssinatura) {
-    return res.status(400).json({ erro: "Não é possível remover um cliente vinculado a assinaturas." });
+    const cliente = await prisma.cliente.update({
+      where: { id },
+      data: {
+        nome: nome.trim(),
+        email: emailNormalizado,
+        cidade: cidade.trim(),
+        estado: estado.trim().toUpperCase(),
+        pais: pais.trim(),
+      },
+    });
+
+    res.json(cliente);
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ erro: "Cliente não encontrado." });
+    if (e.code === "P2002") return res.status(400).json({ erro: "Esse e-mail já está sendo usado por outro cliente." });
+    res.status(500).json({ erro: "Erro ao atualizar cliente." });
   }
-
-  const index = db.clientes.findIndex((c) => c.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({ erro: "Cliente não encontrado." });
-  }
-
-  db.clientes.splice(index, 1);
-  res.json({ mensagem: "Cliente removido com sucesso." });
 }
 
-module.exports = {
-  listarClientes,
-  buscarCliente,
-  criarCliente,
-  atualizarCliente,
-  deletarCliente,
-};
+async function deletarCliente(req, res) {
+  try {
+    const id = Number(req.params.id);
+
+    const possuiAssinatura = await prisma.assinatura.findFirst({ where: { clienteId: id } });
+    if (possuiAssinatura) {
+      return res.status(400).json({ erro: "Não é possível remover um cliente vinculado a assinaturas." });
+    }
+
+    await prisma.cliente.delete({ where: { id } });
+    res.json({ mensagem: "Cliente removido com sucesso." });
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ erro: "Cliente não encontrado." });
+    res.status(500).json({ erro: "Erro ao deletar cliente." });
+  }
+}
+
+module.exports = { listarClientes, buscarCliente, criarCliente, atualizarCliente, deletarCliente };

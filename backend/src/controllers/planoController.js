@@ -1,105 +1,107 @@
-const db = require("../dados");
+const prisma = require("../prisma/client");
 
 function normalizarRecursos(recursos) {
-  if (Array.isArray(recursos)) {
-    return recursos.map((recurso) => String(recurso).trim()).filter(Boolean);
-  }
-
-  if (typeof recursos === "string") {
-    return recursos
-      .split(";")
-      .map((recurso) => recurso.trim())
-      .filter(Boolean);
-  }
-
+  if (Array.isArray(recursos)) return recursos.map((r) => String(r).trim()).filter(Boolean);
+  if (typeof recursos === "string") return recursos.split(";").map((r) => r.trim()).filter(Boolean);
   return [];
 }
 
-function listarPlanos(req, res) {
-  res.json(db.planos);
-}
-
-function buscarPlano(req, res) {
-  const id = Number(req.params.id);
-  const plano = db.planos.find((p) => p.id === id);
-
-  if (!plano) {
-    return res.status(404).json({ erro: "Plano não encontrado." });
-  }
-
-  res.json(plano);
-}
-
-function criarPlano(req, res) {
-  const { nome, descricao, precoMensal, limiteDispositivos, suporte, recursos } = req.body;
-
-  const novoPlano = {
-    id: db.gerarIdPlano(),
-    nome: nome.trim(),
-    descricao: descricao.trim(),
-    precoMensal: Number(precoMensal),
-    limiteDispositivos: Number(limiteDispositivos),
-    suporte: suporte.trim(),
-    recursos: normalizarRecursos(recursos),
-    criadoEm: new Date().toISOString(),
+function serializarPlano(plano) {
+  return {
+    ...plano,
+    recursos: (() => {
+      try { return JSON.parse(plano.recursos); } catch { return []; }
+    })(),
   };
-
-  db.planos.push(novoPlano);
-  res.status(201).json(novoPlano);
 }
 
-function atualizarPlano(req, res) {
-  const id = Number(req.params.id);
-  const index = db.planos.findIndex((p) => p.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({ erro: "Plano não encontrado." });
+async function listarPlanos(req, res) {
+  try {
+    const planos = await prisma.plano.findMany({ orderBy: { criadoEm: "desc" } });
+    res.json(planos.map(serializarPlano));
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao listar planos." });
   }
+}
 
-  const { nome, descricao, precoMensal, limiteDispositivos, suporte, recursos } = req.body;
+async function buscarPlano(req, res) {
+  try {
+    const id = Number(req.params.id);
+    const plano = await prisma.plano.findUnique({ where: { id } });
+    if (!plano) return res.status(404).json({ erro: "Plano não encontrado." });
+    res.json(serializarPlano(plano));
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao buscar plano." });
+  }
+}
 
-  db.planos[index] = {
-    ...db.planos[index],
-    nome: nome.trim(),
-    descricao: descricao.trim(),
-    precoMensal: Number(precoMensal),
-    limiteDispositivos: Number(limiteDispositivos),
-    suporte: suporte.trim(),
-    recursos: normalizarRecursos(recursos),
-  };
+async function criarPlano(req, res) {
+  try {
+    const { nome, descricao, precoMensal, limiteDispositivos, suporte, recursos } = req.body;
 
-  db.assinaturas.forEach((assinatura) => {
-    if (assinatura.planoId === id) {
-      assinatura.nomePlano = db.planos[index].nome;
-      assinatura.valorMensal = Number((db.planos[index].precoMensal * assinatura.quantidadeFirewalls).toFixed(2));
+    const plano = await prisma.plano.create({
+      data: {
+        nome: nome.trim(),
+        descricao: descricao.trim(),
+        precoMensal: Number(precoMensal),
+        limiteDispositivos: Number(limiteDispositivos),
+        suporte: suporte.trim(),
+        recursos: JSON.stringify(normalizarRecursos(recursos)),
+      },
+    });
+
+    res.status(201).json(serializarPlano(plano));
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao criar plano." });
+  }
+}
+
+async function atualizarPlano(req, res) {
+  try {
+    const id = Number(req.params.id);
+    const { nome, descricao, precoMensal, limiteDispositivos, suporte, recursos } = req.body;
+
+    const plano = await prisma.plano.update({
+      where: { id },
+      data: {
+        nome: nome.trim(),
+        descricao: descricao.trim(),
+        precoMensal: Number(precoMensal),
+        limiteDispositivos: Number(limiteDispositivos),
+        suporte: suporte.trim(),
+        recursos: JSON.stringify(normalizarRecursos(recursos)),
+      },
+    });
+
+    // Recalcular valor das assinaturas ativas vinculadas a este plano
+    await prisma.$executeRaw`
+      UPDATE assinaturas
+      SET valor_mensal = ROUND(${Number(precoMensal)} * quantidade_firewalls, 2)
+      WHERE plano_id = ${id} AND status = 'ativa'
+    `;
+
+    res.json(serializarPlano(plano));
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ erro: "Plano não encontrado." });
+    res.status(500).json({ erro: "Erro ao atualizar plano." });
+  }
+}
+
+async function deletarPlano(req, res) {
+  try {
+    const id = Number(req.params.id);
+
+    const possuiAssinatura = await prisma.assinatura.findFirst({ where: { planoId: id } });
+    if (possuiAssinatura) {
+      return res.status(400).json({ erro: "Não é possível remover um plano vinculado a assinaturas." });
     }
-  });
 
-  res.json(db.planos[index]);
+    await prisma.plano.delete({ where: { id } });
+    res.json({ mensagem: "Plano removido com sucesso." });
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ erro: "Plano não encontrado." });
+    res.status(500).json({ erro: "Erro ao deletar plano." });
+  }
 }
 
-function deletarPlano(req, res) {
-  const id = Number(req.params.id);
-  const possuiAssinatura = db.assinaturas.some((assinatura) => assinatura.planoId === id);
-
-  if (possuiAssinatura) {
-    return res.status(400).json({ erro: "Não é possível remover um plano vinculado a assinaturas." });
-  }
-
-  const index = db.planos.findIndex((p) => p.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({ erro: "Plano não encontrado." });
-  }
-
-  db.planos.splice(index, 1);
-  res.json({ mensagem: "Plano removido com sucesso." });
-}
-
-module.exports = {
-  listarPlanos,
-  buscarPlano,
-  criarPlano,
-  atualizarPlano,
-  deletarPlano,
-};
+module.exports = { listarPlanos, buscarPlano, criarPlano, atualizarPlano, deletarPlano };

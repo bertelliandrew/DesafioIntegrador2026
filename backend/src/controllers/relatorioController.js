@@ -1,4 +1,8 @@
-const db = require("../dados");
+const prisma = require("../prisma/client");
+
+function formatarMoeda(valor) {
+  return Number(valor.toFixed(2));
+}
 
 function contarPorCampo(lista, campo) {
   return lista.reduce((acc, item) => {
@@ -8,55 +12,63 @@ function contarPorCampo(lista, campo) {
   }, {});
 }
 
-function formatarMoeda(valor) {
-  return Number(valor.toFixed(2));
-}
+async function gerarRelatorio(req, res) {
+  try {
+    const [clientes, planos, assinaturas] = await Promise.all([
+      prisma.cliente.findMany(),
+      prisma.plano.findMany(),
+      prisma.assinatura.findMany({
+        include: {
+          cliente: { select: { estado: true } },
+          plano:   { select: { id: true, nome: true } },
+        },
+      }),
+    ]);
 
-function gerarRelatorio(req, res) {
-  const totalAssinaturas = db.assinaturas.length;
-  const assinaturasAtivas = db.assinaturas.filter((a) => a.status === "ativa");
-  const assinaturasCanceladas = db.assinaturas.filter((a) => a.status === "cancelada");
-  const receitaMensalAtiva = assinaturasAtivas.reduce((total, assinatura) => total + assinatura.valorMensal, 0);
-  const taxaCancelamento = totalAssinaturas === 0 ? 0 : (assinaturasCanceladas.length / totalAssinaturas) * 100;
+    const assinaturasAtivas     = assinaturas.filter((a) => a.status === "ativa");
+    const assinaturasCanceladas = assinaturas.filter((a) => a.status === "cancelada");
 
-  const assinaturasPorPlano = db.planos.map((plano) => {
-    const relacionadas = db.assinaturas.filter((assinatura) => assinatura.planoId === plano.id);
-    const ativas = relacionadas.filter((assinatura) => assinatura.status === "ativa").length;
-    const canceladas = relacionadas.filter((assinatura) => assinatura.status === "cancelada").length;
+    const receitaMensalAtiva = assinaturasAtivas.reduce((t, a) => t + a.valorMensal, 0);
+    const taxaCancelamento   = assinaturas.length === 0 ? 0 : (assinaturasCanceladas.length / assinaturas.length) * 100;
 
-    return {
-      planoId: plano.id,
-      nomePlano: plano.nome,
-      total: relacionadas.length,
-      ativas,
-      canceladas,
-      receitaMensalAtiva: formatarMoeda(
-        relacionadas
-          .filter((assinatura) => assinatura.status === "ativa")
-          .reduce((total, assinatura) => total + assinatura.valorMensal, 0)
-      ),
-    };
-  });
+    const assinaturasPorPlano = planos.map((plano) => {
+      const relacionadas = assinaturas.filter((a) => a.planoId === plano.id);
+      const ativas       = relacionadas.filter((a) => a.status === "ativa");
+      const canceladas   = relacionadas.filter((a) => a.status === "cancelada");
 
-  const planoMaisContratado = [...assinaturasPorPlano].sort((a, b) => b.total - a.total)[0] || null;
-  const cancelamentosPorMotivo = contarPorCampo(assinaturasCanceladas, "motivoCancelamento");
-  const clientesPorEstado = contarPorCampo(db.clientes, "estado");
+      return {
+        planoId:            plano.id,
+        nomePlano:          plano.nome,
+        total:              relacionadas.length,
+        ativas:             ativas.length,
+        canceladas:         canceladas.length,
+        receitaMensalAtiva: formatarMoeda(ativas.reduce((t, a) => t + a.valorMensal, 0)),
+      };
+    });
 
-  res.json({
-    resumo: {
-      totalClientes: db.clientes.length,
-      totalPlanos: db.planos.length,
-      totalAssinaturas,
-      assinaturasAtivas: assinaturasAtivas.length,
-      assinaturasCanceladas: assinaturasCanceladas.length,
-      taxaCancelamento: formatarMoeda(taxaCancelamento),
-      receitaMensalAtiva: formatarMoeda(receitaMensalAtiva),
-    },
-    assinaturasPorPlano,
-    planoMaisContratado,
-    cancelamentosPorMotivo,
-    clientesPorEstado,
-  });
+    const planoMaisContratado = [...assinaturasPorPlano].sort((a, b) => b.total - a.total)[0] || null;
+
+    const cancelamentosPorMotivo = contarPorCampo(assinaturasCanceladas, "motivoCancelamento");
+    const clientesPorEstado      = contarPorCampo(clientes, "estado");
+
+    res.json({
+      resumo: {
+        totalClientes:          clientes.length,
+        totalPlanos:            planos.length,
+        totalAssinaturas:       assinaturas.length,
+        assinaturasAtivas:      assinaturasAtivas.length,
+        assinaturasCanceladas:  assinaturasCanceladas.length,
+        taxaCancelamento:       formatarMoeda(taxaCancelamento),
+        receitaMensalAtiva:     formatarMoeda(receitaMensalAtiva),
+      },
+      assinaturasPorPlano,
+      planoMaisContratado,
+      cancelamentosPorMotivo,
+      clientesPorEstado,
+    });
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao gerar relatório." });
+  }
 }
 
 module.exports = { gerarRelatorio };
