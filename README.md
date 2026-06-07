@@ -66,6 +66,7 @@ Cliente  ──< Assinatura >── Plano
 
 - Node.js 18+
 - npm
+- Prisma Versão 5/6
 
 ### 1. Backend
 
