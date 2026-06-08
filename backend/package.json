@@ -10,9 +10,11 @@
     "db:seed": "node prisma/seed.js",
     "db:studio": "npx prisma studio",
     "db:reset": "npx prisma migrate reset --force && node prisma/seed.js",
-    "setup": "npm install && npx prisma migrate dev --name init && node prisma/seed.js"
+    "setup": "npm install && npx prisma migrate dev --name init && npx prisma generate && node prisma/seed.js"
   },
   "dependencies": {
+    "@libsql/client": "^0.15.4",
+    "@prisma/adapter-libsql": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",

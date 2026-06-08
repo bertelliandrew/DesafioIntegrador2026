@@ -1,9 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -30,7 +26,7 @@ model Plano {
   precoMensal        Float        @map("preco_mensal")
   limiteDispositivos Int          @map("limite_dispositivos")
   suporte            String
-  recursos           String       // JSON serializado: ["item1","item2"]
+  recursos           String
   criadoEm          DateTime     @default(now()) @map("criado_em")
   assinaturas        Assinatura[]
 
