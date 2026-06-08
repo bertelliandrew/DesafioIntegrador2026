@@ -67,7 +67,11 @@ async function gerarRelatorio(req, res) {
       clientesPorEstado,
     });
   } catch (e) {
-    res.status(500).json({ erro: "Erro ao gerar relatório." });
+    console.error("ERRO AO GERAR RELATÓRIO:", e);
+    res.status(500).json({
+      erro: "Erro ao gerar relatório.",
+      detalhes: process.env.NODE_ENV === "development" ? e.message : undefined,
+    });
   }
 }
 

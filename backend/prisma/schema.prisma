@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model Cliente {
@@ -13,7 +14,7 @@ model Cliente {
   cidade      String
   estado      String
   pais        String
-  criadoEm   DateTime     @default(now()) @map("criado_em")
+  criadoEm    DateTime     @default(now()) @map("criado_em")
   assinaturas Assinatura[]
 
   @@map("clientes")
@@ -27,7 +28,7 @@ model Plano {
   limiteDispositivos Int          @map("limite_dispositivos")
   suporte            String
   recursos           String
-  criadoEm          DateTime     @default(now()) @map("criado_em")
+  criadoEm           DateTime     @default(now()) @map("criado_em")
   assinaturas        Assinatura[]
 
   @@map("planos")
@@ -42,8 +43,8 @@ model Assinatura {
   status              String    @default("ativa")
   valorMensal         Float     @map("valor_mensal")
   motivoCancelamento  String?   @map("motivo_cancelamento")
-  criadoEm           DateTime  @default(now()) @map("criado_em")
-  canceladoEm        DateTime? @map("cancelado_em")
+  criadoEm            DateTime  @default(now()) @map("criado_em")
+  canceladoEm         DateTime? @map("cancelado_em")
 
   cliente Cliente @relation(fields: [clienteId], references: [id])
   plano   Plano   @relation(fields: [planoId], references: [id])

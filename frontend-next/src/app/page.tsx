@@ -48,8 +48,9 @@ export default function Home() {
     async function carregarResumo() {
       try {
         const relatorio = await api.get<RelatorioAssinaturas>("/relatorios");
-        setResumo(relatorio.resumo);
-      } catch {
+        setResumo(relatorio?.resumo || vazio);
+      } catch (erro) {
+        console.error("Erro ao carregar resumo:", erro);
         setResumo(vazio);
       }
     }
@@ -74,22 +75,22 @@ export default function Home() {
       <section className="grid grid-4">
         <div className="metric-card">
           <span className="metric-label">Clientes</span>
-          <strong className="metric-value">{resumo.totalClientes}</strong>
+          <strong className="metric-value">{resumo?.totalClientes ?? 0}</strong>
           <span className="metric-help">contas cadastradas</span>
         </div>
         <div className="metric-card">
           <span className="metric-label">Assinaturas ativas</span>
-          <strong className="metric-value">{resumo.assinaturasAtivas}</strong>
+          <strong className="metric-value">{resumo?.assinaturasAtivas ?? 0}</strong>
           <span className="metric-help">contratos em andamento</span>
         </div>
         <div className="metric-card">
           <span className="metric-label">Cancelamento</span>
-          <strong className="metric-value">{resumo.taxaCancelamento}%</strong>
+          <strong className="metric-value">{resumo?.taxaCancelamento ?? 0}%</strong>
           <span className="metric-help">taxa calculada sobre o total</span>
         </div>
         <div className="metric-card">
           <span className="metric-label">Receita mensal</span>
-          <strong className="metric-value" style={{ fontSize: "1.5rem" }}>{moeda(resumo.receitaMensalAtiva)}</strong>
+          <strong className="metric-value" style={{ fontSize: "1.5rem" }}>{moeda(resumo?.receitaMensalAtiva ?? 0)}</strong>
           <span className="metric-help">assinaturas ativas</span>
         </div>
       </section>

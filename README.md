@@ -1,193 +1,100 @@
 # FirewallSign — Sistema de Assinaturas de Planos de Firewall
 
-Sistema completo para gerenciamento de clientes, planos e assinaturas de firewall.  
-**Stack:** Node.js + Express + Prisma 7 + SQLite · Next.js 14 (App Router) + TypeScript
+Sistema web para gerenciar clientes, planos de firewall, assinaturas e relatórios.
 
----
+Este pacote foi ajustado para usar **Prisma 6 + SQLite**, removendo o adapter `@prisma/adapter-libsql` que estava causando o erro:
 
-## Estrutura do Projeto
-
+```txt
+URL_INVALID: The URL 'undefined' is not in a valid format
 ```
-DesafioIntegrador2026/
+
+## Stack
+
+- Backend: Node.js + Express + Prisma 6 + SQLite
+- Frontend: Next.js 14 + React + TypeScript
+
+## Estrutura
+
+```txt
+DesafioIntegrador2026-main/
 ├── backend/
 │   ├── prisma/
-│   │   ├── schema.prisma       ← Modelos do banco de dados
-│   │   └── seed.js             ← Dados iniciais para popular o banco
+│   │   ├── migrations/
+│   │   ├── schema.prisma
+│   │   └── seed.js
 │   ├── src/
-│   │   ├── controllers/        ← Lógica de negócio (Prisma)
-│   │   ├── middlewares/        ← Validações de entrada
-│   │   ├── prisma/
-│   │   │   └── client.js       ← Instância singleton do PrismaClient
-│   │   ├── routes/             ← Definição de rotas Express
-│   │   └── server.js           ← Entry point da API
-│   ├── prisma.config.js        ← Configuração do Prisma 7 (URL do banco)
-│   ├── .env.example            ← Modelo do arquivo de variáveis de ambiente
+│   │   ├── controllers/
+│   │   ├── middlewares/
+│   │   ├── prisma/client.js
+│   │   ├── routes/
+│   │   └── server.js
+│   ├── .env
+│   ├── .env.example
 │   └── package.json
 │
 └── frontend-next/
-    ├── src/
-    │   ├── app/                ← Páginas (App Router)
-    │   │   ├── clientes/
-    │   │   ├── planos/
-    │   │   ├── assinaturas/
-    │   │   └── relatorios/
-    │   ├── components/
-    │   │   └── Navbar.tsx
-    │   └── lib/
-    │       └── api.ts          ← Helper de fetch + tipos TypeScript
+    ├── src/app/
+    ├── src/components/
+    ├── src/lib/api.ts
+    ├── .env.local.example
     └── package.json
 ```
 
----
+## Importante
 
-## Banco de Dados — Prisma 7 + SQLite
+Use preferencialmente **Node 20 LTS** ou **Node 22 LTS**.
 
-O banco de dados é gerenciado pelo **Prisma ORM 7** com **SQLite** como provider.  
-O arquivo `dev.db` é gerado automaticamente e fica dentro de `backend/prisma/`.
+Se você estiver usando Node 24 e der erro estranho com Prisma, instale o Node 22 LTS.
 
-> ⚠️ **Prisma 7:** A URL do banco não fica mais no `schema.prisma`.  
-> Ela é configurada no arquivo `backend/prisma.config.js`.
+## Como rodar o backend
 
-### Modelos
-
-| Tabela        | Campos principais                                                              |
-|---------------|--------------------------------------------------------------------------------|
-| `clientes`    | id, nome, email (único), cidade, estado, pais, criadoEm                        |
-| `planos`      | id, nome, descricao, precoMensal, limiteDispositivos, suporte, recursos (JSON) |
-| `assinaturas` | id, clienteId (FK), planoId (FK), quantidade, ciclo, status, valorMensal       |
-
-### Relações
-
-```
-Cliente  ──< Assinatura >── Plano
-```
-
----
-
-## Como Rodar
-
-### Pré-requisitos
-
-- Node.js 18+
-- npm
-- Prisma 7
-
-### 1. Backend
-
-> ⚠️ **Atenção:** todos os comandos abaixo devem ser executados **dentro da pasta `backend`**.
+Abra um terminal na pasta do projeto e rode:
 
 ```bash
-# Entre na pasta do backend — NÃO pule esse passo
 cd backend
-
-# Instalar dependências
 npm install
-
-# Criar o arquivo de variáveis de ambiente
-# Windows:
-copy .env.example .env
-# Mac/Linux:
-cp .env.example .env
-
-# Criar o banco e rodar as migrations
 npx prisma migrate dev --name init
 npx prisma generate
-
-# Popular com dados iniciais
 node prisma/seed.js
-
-# Iniciar servidor (porta 3001)
 npm run dev
+```
 
-### 2. Frontend (Next.js — porta 3000)
+O backend deve subir em:
 
-> Abra um **novo terminal** para o frontend. Não feche o terminal do backend.
+```txt
+http://localhost:3001
+```
+
+Teste a API no navegador:
+
+```txt
+http://localhost:3001/api/clientes
+http://localhost:3001/api/planos
+http://localhost:3001/api/assinaturas
+http://localhost:3001/api/relatorios
+```
+
+## Como rodar o frontend
+
+Abra outro terminal, sem fechar o backend:
 
 ```bash
-# Entre na pasta do frontend — NÃO na raiz do projeto
 cd frontend-next
-
-# Windows:
-copy .env.local.example .env.local
-# Mac/Linux:
-cp .env.local.example .env.local
-
 npm install
 npm run dev
 ```
 
-Acesse: **http://localhost:3000**
+Acesse:
 
----
-
-## Scripts do Backend
-
-> Todos os scripts abaixo devem ser executados **dentro da pasta `backend`**.
-
-| Comando              | Descrição                                  |
-|----------------------|--------------------------------------------|
-| `npm run dev`        | Inicia o servidor com nodemon (hot reload) |
-| `npm run start`      | Inicia o servidor sem hot reload           |
-| `npm run db:migrate` | Cria/aplica migrations do Prisma           |
-| `npm run db:seed`    | Popula o banco com dados iniciais          |
-| `npm run db:studio`  | Abre o Prisma Studio (GUI visual do banco) |
-| `npm run db:reset`   | Reseta o banco e repopula do zero          |
-| `npm run setup`      | install + migrate + seed (primeira vez)    |
-
-### Prisma Studio
-
-```bash
-cd backend
-npx prisma studio
+```txt
+http://localhost:3000
 ```
 
----
+## Variáveis de ambiente
 
-## Endpoints da API
+### Backend — `backend/.env`
 
-### Clientes
-
-| Método | Rota              | Descrição                |
-|--------|-------------------|--------------------------|
-| GET    | /api/clientes     | Listar todos os clientes |
-| GET    | /api/clientes/:id | Buscar cliente por ID    |
-| POST   | /api/clientes     | Criar novo cliente       |
-| PUT    | /api/clientes/:id | Atualizar cliente        |
-| DELETE | /api/clientes/:id | Remover cliente          |
-
-### Planos
-
-| Método | Rota            | Descrição              |
-|--------|-----------------|------------------------|
-| GET    | /api/planos     | Listar todos os planos |
-| GET    | /api/planos/:id | Buscar plano por ID    |
-| POST   | /api/planos     | Criar novo plano       |
-| PUT    | /api/planos/:id | Atualizar plano        |
-| DELETE | /api/planos/:id | Remover plano          |
-
-### Assinaturas
-
-| Método | Rota                          | Descrição                   |
-|--------|-------------------------------|-----------------------------|
-| GET    | /api/assinaturas              | Listar todas as assinaturas |
-| GET    | /api/assinaturas/:id          | Buscar assinatura por ID    |
-| POST   | /api/assinaturas              | Criar nova assinatura       |
-| PUT    | /api/assinaturas/:id          | Atualizar assinatura        |
-| PUT    | /api/assinaturas/:id/cancelar | Cancelar assinatura         |
-| PUT    | /api/assinaturas/:id/reativar | Reativar assinatura         |
-| DELETE | /api/assinaturas/:id          | Remover assinatura          |
-
-### Relatórios
-
-| Método | Rota            | Descrição                             |
-|--------|-----------------|---------------------------------------|
-| GET    | /api/relatorios | Relatório geral: receita, planos, etc |
-
----
-
-## Variáveis de Ambiente
-
-### Backend (`backend/.env`)
+O arquivo já está incluído no ZIP com este conteúdo:
 
 ```env
 DATABASE_URL="file:./dev.db"
@@ -195,18 +102,86 @@ NODE_ENV=development
 PORT=3001
 ```
 
-### Frontend (`frontend-next/.env.local`)
+### Frontend — `frontend-next/.env.local`
+
+Se quiser, crie esse arquivo com:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
----
+Caso não crie, o frontend já usa `http://localhost:3001/api` como padrão.
 
-## Observações
+## Scripts do backend
 
-- O SQLite gera um arquivo `dev.db` local — sem necessidade de instalar nenhum servidor de banco.
-- O `dev.db` está no `.gitignore`; cada desenvolvedor precisa criar o `.env` e rodar o setup localmente.
-- As migrations ficam versionadas em `prisma/migrations/` e devem ser commitadas.
-- O campo `recursos` dos planos é armazenado como JSON serializado (string) no SQLite e deserializado automaticamente nas respostas da API.
-- **Prisma 7:** a URL do banco é configurada em `backend/prisma.config.js` e lida via `dotenv`. O `.env` **precisa existir** antes de rodar qualquer comando Prisma.
+| Comando | Função |
+|---|---|
+| `npm run dev` | Inicia o backend com nodemon |
+| `npm run start` | Inicia o backend sem nodemon |
+| `npm run db:migrate` | Roda as migrations |
+| `npm run db:generate` | Gera o Prisma Client |
+| `npm run db:seed` | Popula o banco com dados iniciais |
+| `npm run db:studio` | Abre o Prisma Studio |
+| `npm run db:reset` | Reseta o banco e roda seed |
+| `npm run setup` | Instala, migra, gera client e popula o banco |
+
+## Endpoints
+
+### Clientes
+
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/clientes` | Lista clientes |
+| GET | `/api/clientes/:id` | Busca cliente |
+| POST | `/api/clientes` | Cria cliente |
+| PUT | `/api/clientes/:id` | Atualiza cliente |
+| DELETE | `/api/clientes/:id` | Remove cliente |
+
+### Planos
+
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/planos` | Lista planos |
+| GET | `/api/planos/:id` | Busca plano |
+| POST | `/api/planos` | Cria plano |
+| PUT | `/api/planos/:id` | Atualiza plano |
+| DELETE | `/api/planos/:id` | Remove plano |
+
+### Assinaturas
+
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/assinaturas` | Lista assinaturas |
+| GET | `/api/assinaturas/:id` | Busca assinatura |
+| POST | `/api/assinaturas` | Cria assinatura |
+| PUT | `/api/assinaturas/:id` | Atualiza assinatura |
+| PUT | `/api/assinaturas/:id/cancelar` | Cancela assinatura |
+| PUT | `/api/assinaturas/:id/reativar` | Reativa assinatura |
+| DELETE | `/api/assinaturas/:id` | Remove assinatura |
+
+### Relatórios
+
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/relatorios` | Retorna indicadores gerais |
+
+## O que foi corrigido
+
+- Removido Prisma 7 do backend.
+- Removidos `@prisma/adapter-libsql` e `@libsql/client`.
+- Backend agora usa Prisma 6 do jeito tradicional com SQLite local.
+- `schema.prisma` voltou a usar `url = env("DATABASE_URL")`.
+- `src/prisma/client.js` foi simplificado para `new PrismaClient()`.
+- `prisma/seed.js` foi corrigido e agora popula o banco de verdade.
+- Removido `prisma.config.js`, que era específico da configuração anterior.
+- Frontend ficou mais protegido para não quebrar caso a API retorne erro.
+
+## Observação
+
+Se aparecer erro no frontend, primeiro teste a API diretamente:
+
+```txt
+http://localhost:3001/api/relatorios
+```
+
+Se essa rota retornar JSON com `resumo`, o backend está funcionando.

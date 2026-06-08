@@ -6,7 +6,14 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
   });
 
-  return res.json();
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const mensagem = data?.erro || "Erro na comunicação com a API.";
+    throw new Error(mensagem);
+  }
+
+  return data as T;
 }
 
 export const api = {
