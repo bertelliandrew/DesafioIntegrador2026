@@ -91,27 +91,13 @@ cp .env.example .env
 
 # Criar o banco e rodar as migrations
 npx prisma migrate dev --name init
+npx prisma generate
 
 # Popular com dados iniciais
 node prisma/seed.js
 
 # Iniciar servidor (porta 3001)
 npm run dev
-```
-
-**Ou use o comando setup (faz tudo de uma vez, exceto criar o .env):**
-
-```bash
-# Entre na pasta do backend primeiro!
-cd backend
-
-# Crie o .env antes de rodar o setup
-copy .env.example .env   # Windows
-# cp .env.example .env   # Mac/Linux
-
-# Agora sim:
-npm run setup
-```
 
 ### 2. Frontend (Next.js — porta 3000)
 
