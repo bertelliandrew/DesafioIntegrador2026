@@ -2,12 +2,6 @@
 
 Sistema web para gerenciar clientes, planos de firewall, assinaturas e relatórios.
 
-Este pacote foi ajustado para usar **Prisma 6 + SQLite**, removendo o adapter `@prisma/adapter-libsql` que estava causando o erro:
-
-```txt
-URL_INVALID: The URL 'undefined' is not in a valid format
-```
-
 ## Stack
 
 - Backend: Node.js + Express + Prisma 6 + SQLite
@@ -64,16 +58,6 @@ O backend deve subir em:
 ```txt
 http://localhost:3001
 ```
-
-Teste a API no navegador:
-
-```txt
-http://localhost:3001/api/clientes
-http://localhost:3001/api/planos
-http://localhost:3001/api/assinaturas
-http://localhost:3001/api/relatorios
-```
-
 ## Como rodar o frontend
 
 Abra outro terminal, sem fechar o backend:
@@ -170,18 +154,7 @@ Caso não crie, o frontend já usa `http://localhost:3001/api` como padrão.
 - Removido Prisma 7 do backend.
 - Removidos `@prisma/adapter-libsql` e `@libsql/client`.
 - Backend agora usa Prisma 6 do jeito tradicional com SQLite local.
-- `schema.prisma` voltou a usar `url = env("DATABASE_URL")`.
-- `src/prisma/client.js` foi simplificado para `new PrismaClient()`.
-- `prisma/seed.js` foi corrigido e agora popula o banco de verdade.
-- Removido `prisma.config.js`, que era específico da configuração anterior.
-- Frontend ficou mais protegido para não quebrar caso a API retorne erro.
 
-## Observação
-
-Se aparecer erro no frontend, primeiro teste a API diretamente:
-
-```txt
-http://localhost:3001/api/relatorios
 ```
 
 Se essa rota retornar JSON com `resumo`, o backend está funcionando.
