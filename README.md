@@ -2,8 +2,6 @@
 
 Sistema web para gerenciar clientes, planos de firewall, assinaturas e relatórios gerenciais.
 
-Este projeto foi ajustado para ficar mais alinhado com a stack pedida no Desafio Integrador: **Next.js no frontend**, **NestJS no backend** e **Prisma + SQLite** para persistência.
-
 ## Stack
 
 - Backend: NestJS + TypeScript + Prisma 6 + SQLite
@@ -194,19 +192,6 @@ A rota `/api/relatorios` retorna:
 - plano mais contratado;
 - cancelamentos por motivo;
 - clientes por estado.
-
-## O que foi migrado para NestJS
-
-O backend anterior em Express foi substituído por uma estrutura NestJS modular:
-
-- `ClientesModule`, `ClientesController`, `ClientesService`
-- `PlanosModule`, `PlanosController`, `PlanosService`
-- `AssinaturasModule`, `AssinaturasController`, `AssinaturasService`
-- `RelatoriosModule`, `RelatoriosController`, `RelatoriosService`
-- `PrismaModule` e `PrismaService`
-- DTOs com validação usando `class-validator`
-- Prefixo global `/api`
-- CORS habilitado
 
 ## Próximo passo do projeto
 
