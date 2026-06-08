@@ -25,6 +25,19 @@ app.get("/", (req, res) => {
   });
 });
 
+// Graceful shutdown — necessário no Prisma 7 para fechar conexões corretamente
+const prisma = require("./prisma/client");
+
+process.on("SIGINT", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });

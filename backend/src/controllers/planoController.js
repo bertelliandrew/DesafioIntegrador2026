@@ -60,13 +60,14 @@ async function atualizarPlano(req, res) {
   try {
     const id = Number(req.params.id);
     const { nome, descricao, precoMensal, limiteDispositivos, suporte, recursos } = req.body;
+    const novoPreco = Number(precoMensal);
 
     const plano = await prisma.plano.update({
       where: { id },
       data: {
         nome: nome.trim(),
         descricao: descricao.trim(),
-        precoMensal: Number(precoMensal),
+        precoMensal: novoPreco,
         limiteDispositivos: Number(limiteDispositivos),
         suporte: suporte.trim(),
         recursos: JSON.stringify(normalizarRecursos(recursos)),
@@ -74,11 +75,20 @@ async function atualizarPlano(req, res) {
     });
 
     // Recalcular valor das assinaturas ativas vinculadas a este plano
-    await prisma.$executeRaw`
-      UPDATE assinaturas
-      SET valor_mensal = ROUND(${Number(precoMensal)} * quantidade_firewalls, 2)
-      WHERE plano_id = ${id} AND status = 'ativa'
-    `;
+    // Usando updateMany em vez de $executeRaw para compatibilidade e type-safety no Prisma 7
+    const assinaturasAtivas = await prisma.assinatura.findMany({
+      where: { planoId: id, status: "ativa" },
+      select: { id: true, quantidadeFirewalls: true },
+    });
+
+    await Promise.all(
+      assinaturasAtivas.map((a) =>
+        prisma.assinatura.update({
+          where: { id: a.id },
+          data: { valorMensal: Number((novoPreco * a.quantidadeFirewalls).toFixed(2)) },
+        })
+      )
+    );
 
     res.json(serializarPlano(plano));
   } catch (e) {
