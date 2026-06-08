@@ -1,11 +1,18 @@
+require("dotenv/config");
 const { PrismaClient } = require("@prisma/client");
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+});
 
 async function main() {
   console.log("🌱 Populando banco de dados...");
 
-  // Limpar dados existentes
+  // Limpar dados existentes (ordem importa por causa das FK)
   await prisma.assinatura.deleteMany();
   await prisma.cliente.deleteMany();
   await prisma.plano.deleteMany();
@@ -18,7 +25,6 @@ async function main() {
       cidade: "Guarapuava",
       estado: "PR",
       pais: "Brasil",
-      criadoEm: new Date("2026-05-08T09:00:00.000Z"),
     },
   });
 
@@ -29,7 +35,6 @@ async function main() {
       cidade: "Curitiba",
       estado: "PR",
       pais: "Brasil",
-      criadoEm: new Date("2026-05-09T10:30:00.000Z"),
     },
   });
 
@@ -42,7 +47,6 @@ async function main() {
       limiteDispositivos: 10,
       suporte: "Comercial",
       recursos: JSON.stringify(["Regras de entrada e saída", "Bloqueio por portas", "Relatório mensal"]),
-      criadoEm: new Date("2026-05-08T09:00:00.000Z"),
     },
   });
 
@@ -54,7 +58,6 @@ async function main() {
       limiteDispositivos: 50,
       suporte: "Prioritário",
       recursos: JSON.stringify(["VPN site-to-site", "Regras avançadas", "Alertas operacionais"]),
-      criadoEm: new Date("2026-05-08T09:00:00.000Z"),
     },
   });
 
@@ -66,7 +69,6 @@ async function main() {
       limiteDispositivos: 200,
       suporte: "Dedicado",
       recursos: JSON.stringify(["Alta disponibilidade", "Segmentação de rede", "Relatórios executivos"]),
-      criadoEm: new Date("2026-05-08T09:00:00.000Z"),
     },
   });
 
@@ -79,7 +81,6 @@ async function main() {
       ciclo: "mensal",
       status: "ativa",
       valorMensal: 699.8,
-      criadoEm: new Date("2026-05-10T14:15:00.000Z"),
     },
   });
 
@@ -92,8 +93,7 @@ async function main() {
       status: "cancelada",
       valorMensal: 149.9,
       motivoCancelamento: "Migração para outro fornecedor",
-      criadoEm: new Date("2026-05-11T11:20:00.000Z"),
-      canceladoEm: new Date("2026-05-20T16:45:00.000Z"),
+      canceladoEm: new Date(),
     },
   });
 
