@@ -12,7 +12,9 @@
     "db:seed": "node prisma/seed.js",
     "db:studio": "npx prisma studio",
     "db:reset": "npx prisma migrate reset --force && node prisma/seed.js",
-    "setup": "npm install && npx prisma migrate dev --name init && npx prisma generate && node prisma/seed.js"
+    "setup": "npm install && npx prisma migrate dev --name init && npx prisma generate && node prisma/seed.js",
+    "ia:train": "python ../ia/treinar_modelo.py",
+    "ia:predict-test": "python ../ia/prever_clientes.py"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.20",

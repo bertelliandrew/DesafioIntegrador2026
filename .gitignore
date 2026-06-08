@@ -1,7 +1,47 @@
+# Dependências
 node_modules/
+**/node_modules/
+
+# Builds
+backend/dist/
 dist/
+frontend-next/.next/
+.next/
+out/
+build/
+
+# Variáveis de ambiente
 .env
+.env.*
+!.env.example
+!.env.local.example
+backend/.env
+frontend-next/.env.local
+
+# Banco local SQLite
 *.db
 *.db-journal
-.next/
+*.sqlite
+*.sqlite3
+backend/dev.db
+backend/prisma/dev.db
+
+# Python / IA
+ia/.venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Sistema / editor
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/

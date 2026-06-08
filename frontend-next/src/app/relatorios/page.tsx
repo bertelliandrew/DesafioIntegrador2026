@@ -55,8 +55,8 @@ export default function RelatoriosPage() {
       <div className="page-header">
         <h1>Relatórios</h1>
         <p>
-          Indicadores gerenciais de assinaturas de firewall. A taxa de cancelamento é calculada
-          por regra simples, sem módulo preditivo nesta etapa.
+          Indicadores gerenciais de assinaturas de firewall. A análise preditiva fica disponível
+          na tela de crescimento estratégico.
         </p>
       </div>
 

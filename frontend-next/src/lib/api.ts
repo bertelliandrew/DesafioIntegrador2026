@@ -92,3 +92,22 @@ export interface RelatorioAssinaturas {
   cancelamentosPorMotivo: Record<string, number>;
   clientesPorEstado: Record<string, number>;
 }
+
+export interface ClienteIa {
+  clienteId: number;
+  nome: string;
+  email: string;
+  estado: string;
+  riscoChurn: number;
+  propensaoCompra: number;
+  classificacao: string;
+  recomendacao: string;
+}
+
+export interface RelatorioIa {
+  modelo: string;
+  tratamentoDados: string;
+  acuraciaChurn: number | null;
+  acuraciaCompra: number | null;
+  clientes: ClienteIa[];
+}

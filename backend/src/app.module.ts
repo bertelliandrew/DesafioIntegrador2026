@@ -5,6 +5,7 @@ import { ClientesModule } from './clientes/clientes.module';
 import { PlanosModule } from './planos/planos.module';
 import { AssinaturasModule } from './assinaturas/assinaturas.module';
 import { RelatoriosModule } from './relatorios/relatorios.module';
+import { IaModule } from './ia/ia.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { RelatoriosModule } from './relatorios/relatorios.module';
     PlanosModule,
     AssinaturasModule,
     RelatoriosModule,
+    IaModule,
   ],
   controllers: [AppController],
 })

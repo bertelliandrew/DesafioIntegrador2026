@@ -1,23 +1,94 @@
-# FirewallSign — Sistema de Assinaturas de Planos de Firewall
+# FirewallSign — Desafio Integrador 2026
 
-Sistema web para gerenciar clientes, planos de firewall, assinaturas e relatórios gerenciais.
+Sistema web para gestão de clientes, planos de firewall, assinaturas, relatórios gerenciais e apoio à decisão estratégica para crescimento.
 
-## Stack
+O projeto foi adaptado ao tema do desafio da seguinte forma:
 
-- Backend: NestJS + TypeScript + Prisma 6 + SQLite
-- Frontend: Next.js 14 + React + TypeScript
-- Banco de dados: SQLite
-- ORM: Prisma
+- **Clientes** continuam sendo os clientes cadastrados.
+- **Produtos** são representados pelos **planos de firewall**.
+- **Pedidos** são representados pelas **assinaturas/contratações**.
+- **Relatórios** mostram indicadores gerenciais.
+- **Crescimento estratégico** usa Random Forest para apoiar decisões, classificando risco de churn e propensão de compra.
 
-## Observação sobre o domínio do projeto
+---
 
-No enunciado original, o sistema fala em clientes, produtos e pedidos. Neste projeto, o domínio foi adaptado para uma empresa fictícia de planos de firewall:
+## Stack do projeto
 
-- Clientes = empresas/clientes cadastrados
-- Produtos = planos de firewall
-- Pedidos = assinaturas/contratações dos planos
+### Frontend
 
-## Estrutura
+- Next.js 14
+- React
+- TypeScript
+
+### Backend
+
+- NestJS 10
+- TypeScript
+- Prisma 6.19.2
+- SQLite
+
+### Crescimento Estratégico com Random Forest
+
+- Python 3.12.1
+- pandas
+- scikit-learn
+- joblib
+- Random Forest
+
+---
+
+## Versões recomendadas
+
+Use estas versões para evitar erro de instalação:
+
+```txt
+Node.js: 22 LTS
+npm: versão que vem com o Node 22
+Python: 3.12.1
+Prisma: 6.19.2
+```
+
+Evite usar **Node 24** neste projeto, porque pode gerar avisos de compatibilidade com algumas dependências.
+
+Evite usar **Python 3.14** ou Python beta, porque pandas/scikit-learn podem tentar compilar pacotes e dar erro no Windows.
+
+Para conferir:
+
+```bash
+node -v
+npm -v
+python --version
+py -0
+```
+
+---
+
+## Corrigir registry do npm, caso necessário
+
+Se o `npm install` der erro de timeout ou tentar baixar pacote de um registry estranho, rode:
+
+```bash
+npm config set registry https://registry.npmjs.org/
+npm config delete proxy
+npm config delete https-proxy
+npm cache clean --force
+```
+
+Depois confira:
+
+```bash
+npm config get registry
+```
+
+O esperado é:
+
+```txt
+https://registry.npmjs.org/
+```
+
+---
+
+## Estrutura do projeto
 
 ```txt
 DesafioIntegrador2026-main/
@@ -30,6 +101,7 @@ DesafioIntegrador2026-main/
 │   │   ├── assinaturas/
 │   │   ├── clientes/
 │   │   ├── dto/
+│   │   ├── ia/
 │   │   ├── planos/
 │   │   ├── prisma/
 │   │   ├── relatorios/
@@ -38,28 +110,40 @@ DesafioIntegrador2026-main/
 │   │   └── main.ts
 │   ├── .env.example
 │   ├── package.json
-│   ├── tsconfig.json
-│   └── tsconfig.build.json
+│   └── tsconfig.json
 │
-└── frontend-next/
-    ├── src/app/
-    ├── src/components/
-    ├── src/lib/api.ts
-    ├── .env.local.example
-    └── package.json
+├── frontend-next/
+│   ├── src/app/
+│   ├── src/components/
+│   ├── src/lib/api.ts
+│   ├── .env.local.example
+│   └── package.json
+│
+├── ia/
+│   ├── dados_treinamento.csv
+│   ├── requirements.txt
+│   ├── treinar_modelo.py
+│   ├── prever_clientes.py
+│   ├── modelo_random_forest.pkl
+│   └── README_IA.md
+│
+├── .gitignore
+└── README.md
 ```
 
-## Requisitos
+---
 
-Use preferencialmente **Node 20 LTS** ou **Node 22 LTS**.
+## Configuração das variáveis de ambiente
 
-Evite Node 24 para este projeto, pois algumas dependências do ecossistema Prisma/Nest podem gerar avisos ou comportamentos inesperados.
+### Backend
 
-## Variáveis de ambiente
+Crie o arquivo:
 
-### Backend — `backend/.env`
+```txt
+backend/.env
+```
 
-Crie o arquivo `backend/.env` com:
+com o conteúdo:
 
 ```env
 DATABASE_URL="file:./dev.db"
@@ -67,36 +151,79 @@ NODE_ENV=development
 PORT=3001
 ```
 
-### Frontend — `frontend-next/.env.local`
+Também existe o arquivo `backend/.env.example` como exemplo.
 
-Crie o arquivo `frontend-next/.env.local` com:
+### Frontend
+
+Crie o arquivo:
+
+```txt
+frontend-next/.env.local
+```
+
+com o conteúdo:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
-Se não criar, o frontend usa `http://localhost:3001/api` como padrão.
+Também existe o arquivo `frontend-next/.env.local.example` como exemplo.
 
-## Como rodar o backend
+---
 
-Abra um terminal na pasta do projeto:
+# Passo a passo para rodar tudo
+
+## 1. Backend NestJS
+
+Abra um terminal na raiz do projeto e entre no backend:
 
 ```bash
 cd backend
+```
+
+Instale as dependências:
+
+```bash
 npm install
-npx prisma migrate dev --name init
+```
+
+Gere o Prisma Client:
+
+```bash
 npx prisma generate
+```
+
+Crie ou atualize o banco SQLite:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+Se a migration não for necessária ou se preferir apenas sincronizar o banco com o schema, use:
+
+```bash
+npx prisma db push
+```
+
+Popule o banco com dados iniciais:
+
+```bash
 node prisma/seed.js
+```
+
+Inicie o backend:
+
+```bash
 npm run dev
 ```
 
-O backend deve subir em:
+O backend deve rodar em:
 
 ```txt
 http://localhost:3001
 ```
 
-Teste a API no navegador:
+Teste no navegador:
 
 ```txt
 http://localhost:3001/api/clientes
@@ -105,21 +232,124 @@ http://localhost:3001/api/assinaturas
 http://localhost:3001/api/relatorios
 ```
 
-## Como rodar o frontend
+---
 
-Abra outro terminal, sem fechar o backend:
+## 2. Crescimento estratégico com Python e Random Forest
+
+Abra outro terminal na raiz do projeto e entre na pasta do módulo preditivo:
+
+```bash
+cd ia
+```
+
+Crie o ambiente virtual usando Python 3.12:
+
+```bash
+py -3.12 -m venv .venv
+```
+
+Ative o ambiente virtual:
+
+```bash
+.venv\Scripts\activate
+```
+
+Confira a versão:
+
+```bash
+python -V
+```
+
+O esperado é algo como:
+
+```txt
+Python 3.12.1
+```
+
+Atualize o pip:
+
+```bash
+python -m pip install --upgrade pip
+```
+
+Instale as bibliotecas:
+
+```bash
+pip install -r requirements.txt
+```
+
+Treine o modelo:
+
+```bash
+python treinar_modelo.py
+```
+
+Esse comando gera/atualiza o arquivo:
+
+```txt
+modelo_random_forest.pkl
+```
+
+Depois, com o backend rodando, teste a rota de crescimento estratégico:
+
+```txt
+http://localhost:3001/api/ia/clientes
+```
+
+Se aparecer uma lista de clientes com risco de churn e propensão de compra, o módulo preditivo está funcionando.
+
+---
+
+## 3. Frontend Next.js
+
+Abra outro terminal na raiz do projeto e entre no frontend:
 
 ```bash
 cd frontend-next
+```
+
+Instale as dependências:
+
+```bash
 npm install
+```
+
+Inicie o frontend:
+
+```bash
 npm run dev
 ```
 
-Acesse:
+O frontend deve rodar em:
 
 ```txt
 http://localhost:3000
 ```
+
+Telas principais:
+
+```txt
+http://localhost:3000
+http://localhost:3000/clientes
+http://localhost:3000/planos
+http://localhost:3000/assinaturas
+http://localhost:3000/relatorios
+http://localhost:3000/ia
+```
+
+---
+
+# Ordem recomendada para executar
+
+1. Rodar o backend.
+2. Rodar o seed do banco.
+3. Preparar e treinar o módulo preditivo.
+4. Rodar o frontend.
+5. Testar `/api/relatorios`.
+6. Testar `/api/ia/clientes`.
+7. Abrir a tela `/ia` de crescimento estratégico no frontend.
+
+---
 
 ## Scripts do backend
 
@@ -134,10 +364,13 @@ http://localhost:3000
 | `npm run db:studio` | Abre o Prisma Studio |
 | `npm run db:reset` | Reseta o banco e roda seed |
 | `npm run setup` | Instala, migra, gera client e popula o banco |
+| `npm run ia:train` | Treina o modelo Random Forest em Python |
 
-## Endpoints
+---
 
-Todas as rotas do backend usam o prefixo `/api`.
+## Rotas principais da API
+
+Todas as rotas usam o prefixo `/api`.
 
 ### Clientes
 
@@ -149,7 +382,7 @@ Todas as rotas do backend usam o prefixo `/api`.
 | PUT | `/api/clientes/:id` | Atualiza cliente |
 | DELETE | `/api/clientes/:id` | Remove cliente |
 
-### Planos de firewall
+### Planos
 
 | Método | Rota | Função |
 |---|---|---|
@@ -175,28 +408,88 @@ Todas as rotas do backend usam o prefixo `/api`.
 
 | Método | Rota | Função |
 |---|---|---|
-| GET | `/api/relatorios` | Retorna indicadores gerais |
+| GET | `/api/relatorios` | Retorna indicadores gerenciais |
 
-## Relatórios implementados
+### Crescimento Estratégico com Random Forest
 
-A rota `/api/relatorios` retorna:
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/ia/clientes` | Retorna ranking de clientes por risco de churn e propensão de compra |
 
-- total de clientes;
-- total de planos;
-- total de assinaturas;
-- assinaturas ativas;
-- assinaturas canceladas;
-- taxa de cancelamento;
-- receita mensal ativa;
-- assinaturas por plano;
-- plano mais contratado;
-- cancelamentos por motivo;
-- clientes por estado.
+---
 
-## Próximo passo do projeto
+## Explicação simples do módulo preditivo
 
-A próxima parte recomendada é implementar o módulo de Inteligência Artificial com Random Forest para:
+O módulo de crescimento estratégico usa um modelo **Random Forest** para gerar uma análise dos clientes.
 
-- ranking de clientes com maior risco de churn;
-- propensão à compra/upgrade;
-- explicação simples do tratamento de dados usado no treinamento.
+O módulo retorna:
+
+- risco de churn;
+- propensão de compra;
+- classificação do cliente;
+- recomendação estratégica.
+
+Como a base do sistema é pequena, foi usado um conjunto de dados simples de treinamento em `ia/dados_treinamento.csv`. Esse conjunto serve para demonstrar o funcionamento do modelo e permitir a integração com o sistema web.
+
+O backend NestJS chama o script Python e retorna os dados para o frontend. Caso o Python não esteja configurado, existe uma regra simples de fallback para a rota não quebrar durante a demonstração.
+
+---
+
+## Tratamento de dados usado no módulo preditivo
+
+Antes do treinamento, os dados passam por tratamento simples:
+
+- leitura dos dados do CSV;
+- remoção de registros inválidos;
+- conversão de campos categóricos para valores numéricos;
+- separação das variáveis de entrada e saída;
+- treinamento com Random Forest.
+
+As principais informações usadas para a análise são:
+
+- quantidade de firewalls;
+- valor mensal;
+- ciclo da assinatura;
+- plano contratado;
+- status da assinatura;
+- histórico de cancelamento.
+
+---
+
+## Observações importantes para commit
+
+Não commitar:
+
+```txt
+node_modules/
+.venv/
+.env
+.env.local
+*.db
+```
+
+Esses arquivos já estão no `.gitignore`.
+
+Antes de comitar, rode:
+
+```bash
+git status
+```
+
+Se aparecer `node_modules`, `.venv`, `.env` ou `dev.db`, revise o `.gitignore` antes do commit.
+
+---
+
+## Sugestão de commits
+
+```bash
+git add .
+git commit -m "feat: adiciona modulo de crescimento estrategico"
+git push origin main
+```
+
+Se a branch principal for `master`, use:
+
+```bash
+git push origin master
+```

@@ -25,6 +25,11 @@ const cards = [
     title: "Relatórios",
     desc: "Indicadores de receita, planos e taxa de cancelamento.",
   },
+  {
+    href: "/ia",
+    title: "Crescimento estratégico",
+    desc: "Análise de clientes para reduzir cancelamentos e apoiar upgrades.",
+  },
 ];
 
 const vazio: RelatorioAssinaturas["resumo"] = {
@@ -64,7 +69,7 @@ export default function Home() {
         <h1>Gestão simples de assinaturas de firewall</h1>
         <p>
           Sistema web para cadastrar clientes, manter três planos de firewall,
-          registrar contratações e acompanhar cancelamentos sem banco de dados por enquanto.
+          registrar contratações e acompanhar indicadores de crescimento.
         </p>
         <div className="hero-actions">
           <Link href="/assinaturas" className="hero-link">Criar assinatura</Link>
