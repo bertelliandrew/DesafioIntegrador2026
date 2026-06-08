@@ -137,35 +137,25 @@ DesafioIntegrador2026-main/
 
 ### Backend
 
-Crie o arquivo:
-
-```txt
 backend/.env
-```
-
 com o conteúdo:
 
-```env
+
 DATABASE_URL="file:./dev.db"
 NODE_ENV=development
 PORT=3001
-```
 
 Também existe o arquivo `backend/.env.example` como exemplo.
 
 ### Frontend
 
-Crie o arquivo:
 
-```txt
 frontend-next/.env.local
-```
+
 
 com o conteúdo:
 
-```env
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
-```
 
 Também existe o arquivo `frontend-next/.env.local.example` como exemplo.
 
@@ -177,82 +167,37 @@ Também existe o arquivo `frontend-next/.env.local.example` como exemplo.
 
 Abra um terminal na raiz do projeto e entre no backend:
 
-```bash
 cd backend
-```
-
-Instale as dependências:
-
-```bash
 npm install
-```
-
-Gere o Prisma Client:
-
-```bash
-npx prisma generate
-```
+npx prisma generate`
 
 Crie ou atualize o banco SQLite:
 
-```bash
 npx prisma migrate dev --name init
-```
+
 
 Se a migration não for necessária ou se preferir apenas sincronizar o banco com o schema, use:
-
-```bash
 npx prisma db push
-```
 
-Popule o banco com dados iniciais:
-
-```bash
-node prisma/seed.js
-```
 
 Inicie o backend:
-
-```bash
 npm run dev
-```
 
 O backend deve rodar em:
 
-```txt
+
 http://localhost:3001
-```
 
-Teste no navegador:
-
-```txt
-http://localhost:3001/api/clientes
-http://localhost:3001/api/planos
-http://localhost:3001/api/assinaturas
-http://localhost:3001/api/relatorios
-```
-
----
 
 ## 2. Crescimento estratégico com Python e Random Forest
 
 Abra outro terminal na raiz do projeto e entre na pasta do módulo preditivo:
 
-```bash
+
 cd ia
-```
-
-Crie o ambiente virtual usando Python 3.12:
-
-```bash
 py -3.12 -m venv .venv
-```
-
-Ative o ambiente virtual:
-
-```bash
 .venv\Scripts\activate
-```
+
 
 Confira a versão:
 
@@ -267,89 +212,29 @@ Python 3.12.1
 ```
 
 Atualize o pip:
-
-```bash
 python -m pip install --upgrade pip
-```
-
-Instale as bibliotecas:
-
-```bash
 pip install -r requirements.txt
-```
 
 Treine o modelo:
-
-```bash
 python treinar_modelo.py
+
+
 ```
 
-Esse comando gera/atualiza o arquivo:
-
-```txt
-modelo_random_forest.pkl
-```
-
-Depois, com o backend rodando, teste a rota de crescimento estratégico:
-
-```txt
-http://localhost:3001/api/ia/clientes
-```
-
-Se aparecer uma lista de clientes com risco de churn e propensão de compra, o módulo preditivo está funcionando.
-
----
 
 ## 3. Frontend Next.js
 
 Abra outro terminal na raiz do projeto e entre no frontend:
 
-```bash
+
 cd frontend-next
-```
-
-Instale as dependências:
-
-```bash
 npm install
-```
-
-Inicie o frontend:
-
-```bash
 npm run dev
-```
+
 
 O frontend deve rodar em:
-
-```txt
 http://localhost:3000
-```
 
-Telas principais:
-
-```txt
-http://localhost:3000
-http://localhost:3000/clientes
-http://localhost:3000/planos
-http://localhost:3000/assinaturas
-http://localhost:3000/relatorios
-http://localhost:3000/ia
-```
-
----
-
-# Ordem recomendada para executar
-
-1. Rodar o backend.
-2. Rodar o seed do banco.
-3. Preparar e treinar o módulo preditivo.
-4. Rodar o frontend.
-5. Testar `/api/relatorios`.
-6. Testar `/api/ia/clientes`.
-7. Abrir a tela `/ia` de crescimento estratégico no frontend.
-
----
 
 ## Scripts do backend
 
@@ -454,42 +339,3 @@ As principais informações usadas para a análise são:
 - status da assinatura;
 - histórico de cancelamento.
 
----
-
-## Observações importantes para commit
-
-Não commitar:
-
-```txt
-node_modules/
-.venv/
-.env
-.env.local
-*.db
-```
-
-Esses arquivos já estão no `.gitignore`.
-
-Antes de comitar, rode:
-
-```bash
-git status
-```
-
-Se aparecer `node_modules`, `.venv`, `.env` ou `dev.db`, revise o `.gitignore` antes do commit.
-
----
-
-## Sugestão de commits
-
-```bash
-git add .
-git commit -m "feat: adiciona modulo de crescimento estrategico"
-git push origin main
-```
-
-Se a branch principal for `master`, use:
-
-```bash
-git push origin master
-```
