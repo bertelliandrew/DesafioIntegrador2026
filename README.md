@@ -457,39 +457,8 @@ As principais informações usadas para a análise são:
 - status da assinatura;
 - histórico de cancelamento.
 
----
 
-## Observações importantes para commit
 
-Não commitar:
-
-```txt
-node_modules/
-.venv/
-.env
-.env.local
-*.db
-```
-
-Esses arquivos já estão no `.gitignore`.
-
-Antes de comitar, rode:
-
-```bash
-git status
-```
-
-Se aparecer `node_modules`, `.venv`, `.env` ou `dev.db`, revise o `.gitignore` antes do commit.
-
----
-
-## Sugestão de commits
-
-```bash
-git add .
-git commit -m "feat: adiciona modulo de crescimento estrategico"
-git push origin main
-```
 
 Se a branch principal for `master`, use:
 
