@@ -35,10 +35,15 @@ Gere o Prisma Client:
 npx prisma generate
 ```
 
-Crie ou atualize o banco:
+Crie ou atualize o banco e crie o.env:
 
 ```bash
 npx prisma db push
+```
+```bash
+DATABASE_URL="file:./dev.db"
+NODE_ENV=development
+PORT=3001
 ```
 
 Popule o banco com dados iniciais:
