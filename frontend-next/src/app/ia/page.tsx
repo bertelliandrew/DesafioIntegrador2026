@@ -81,11 +81,6 @@ export default function IaPage() {
         <div className="grid" style={{ gap: 24 }}>
           <section className="grid grid-4">
             <div className="metric-card">
-              <span className="metric-label">Modelo</span>
-              <strong className="metric-value" style={{ fontSize: "1.25rem" }}>{relatorio.modelo}</strong>
-              <span className="metric-help">análise dos clientes</span>
-            </div>
-            <div className="metric-card">
               <span className="metric-label">Clientes analisados</span>
               <strong className="metric-value">{relatorio.clientes.length}</strong>
               <span className="metric-help">base cadastrada no sistema</span>
@@ -109,15 +104,6 @@ export default function IaPage() {
                 ? `${melhorOportunidade.nome} possui potencial de crescimento ${melhorOportunidade.potencialCrescimento.toLowerCase()} e propensão de compra de ${melhorOportunidade.propensaoCompra}%.`
                 : "Sem clientes ativos suficientes para análise de upgrade."}
             </p>
-          </section>
-
-          <section className="card">
-            <h2 className="card-title">Tratamento dos dados</h2>
-            <p className="muted">{relatorio.tratamentoDados || "Sem informações de tratamento."}</p>
-            <div className="actions" style={{ marginTop: 14 }}>
-              <span className="badge">Precisão churn: {percentual(relatorio.acuraciaChurn)}</span>
-              <span className="badge">Precisão compra: {percentual(relatorio.acuraciaCompra)}</span>
-            </div>
           </section>
 
           <section className="card">
