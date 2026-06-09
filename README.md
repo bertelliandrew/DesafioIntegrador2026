@@ -1,23 +1,181 @@
-# Desafio Integrador 2026 - FirewallSign
+# FirewallSign — Desafio Integrador 2026
 
-Sistema web para cadastro de clientes, planos de firewall, assinaturas, relatórios e análise estratégica de clientes.
+Sistema web para gestão de clientes, planos de firewall, assinaturas, relatórios gerenciais e apoio à decisão estratégica para crescimento.
 
-## Tecnologias
+O projeto foi adaptado ao tema do desafio da seguinte forma:
 
-- Frontend: Next.js, React e TypeScript
-- Backend: NestJS, Prisma e SQLite
-- IA: Python, Pandas, Scikit-learn e Random Forest
+- **Clientes** continuam sendo os clientes cadastrados.
+- **Produtos** são representados pelos **planos de firewall**.
+- **Pedidos** são representados pelas **assinaturas/contratações**.
+- **Relatórios** mostram indicadores gerenciais.
+- **Crescimento estratégico** usa Random Forest para apoiar decisões, classificando risco de churn e propensão de compra.
 
-## Requisitos
+---
 
-- Node.js 22 LTS
+## Stack do projeto
+
+### Frontend
+
+- Next.js 14
+- React
+- TypeScript
+
+### Backend
+
+- NestJS 10
+- TypeScript
+- Prisma 6.19.2
+- SQLite
+
+### Crescimento Estratégico com Random Forest
+
 - Python 3.12.1
-- npm
-- Git
+- pandas
+- scikit-learn
+- joblib
+- Random Forest
 
-## Como rodar o backend
+---
 
-Entre na pasta do backend:
+## Versões recomendadas
+
+Use estas versões para evitar erro de instalação:
+
+```txt
+Node.js: 22 LTS
+npm: versão que vem com o Node 22
+Python: 3.12.1
+Prisma: 6.19.2
+```
+
+Evite usar **Node 24** neste projeto, porque pode gerar avisos de compatibilidade com algumas dependências.
+
+Evite usar **Python 3.14** ou Python beta, porque pandas/scikit-learn podem tentar compilar pacotes e dar erro no Windows.
+
+Para conferir:
+
+```bash
+node -v
+npm -v
+python --version
+py -0
+```
+
+---
+
+## Corrigir registry do npm, caso necessário
+
+Se o `npm install` der erro de timeout ou tentar baixar pacote de um registry estranho, rode:
+
+```bash
+npm config set registry https://registry.npmjs.org/
+npm config delete proxy
+npm config delete https-proxy
+npm cache clean --force
+```
+
+Depois confira:
+
+```bash
+npm config get registry
+```
+
+O esperado é:
+
+```txt
+https://registry.npmjs.org/
+```
+
+---
+
+## Estrutura do projeto
+
+```txt
+DesafioIntegrador2026-main/
+├── backend/
+│   ├── prisma/
+│   │   ├── migrations/
+│   │   ├── schema.prisma
+│   │   └── seed.js
+│   ├── src/
+│   │   ├── assinaturas/
+│   │   ├── clientes/
+│   │   ├── dto/
+│   │   ├── ia/
+│   │   ├── planos/
+│   │   ├── prisma/
+│   │   ├── relatorios/
+│   │   ├── app.controller.ts
+│   │   ├── app.module.ts
+│   │   └── main.ts
+│   ├── .env.example
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── frontend-next/
+│   ├── src/app/
+│   ├── src/components/
+│   ├── src/lib/api.ts
+│   ├── .env.local.example
+│   └── package.json
+│
+├── ia/
+│   ├── dados_treinamento.csv
+│   ├── requirements.txt
+│   ├── treinar_modelo.py
+│   ├── prever_clientes.py
+│   ├── modelo_random_forest.pkl
+│   └── README_IA.md
+│
+├── .gitignore
+└── README.md
+```
+
+---
+
+## Configuração das variáveis de ambiente
+
+### Backend
+
+Crie o arquivo:
+
+```txt
+backend/.env
+```
+
+com o conteúdo:
+
+```env
+DATABASE_URL="file:./dev.db"
+NODE_ENV=development
+PORT=3001
+```
+
+Também existe o arquivo `backend/.env.example` como exemplo.
+
+### Frontend
+
+Crie o arquivo:
+
+```txt
+frontend-next/.env.local
+```
+
+com o conteúdo:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+```
+
+Também existe o arquivo `frontend-next/.env.local.example` como exemplo.
+
+---
+
+# Passo a passo para rodar tudo
+
+## 1. Backend NestJS
+
+Abra um terminal na raiz do projeto e entre no backend:
 
 ```bash
 cd backend
@@ -35,15 +193,16 @@ Gere o Prisma Client:
 npx prisma generate
 ```
 
-Crie ou atualize o banco e crie o.env:
+Crie ou atualize o banco SQLite:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+Se a migration não for necessária ou se preferir apenas sincronizar o banco com o schema, use:
 
 ```bash
 npx prisma db push
-```
-```bash
-DATABASE_URL="file:./dev.db"
-NODE_ENV=development
-PORT=3001
 ```
 
 Popule o banco com dados iniciais:
@@ -58,15 +217,92 @@ Inicie o backend:
 npm run dev
 ```
 
-O backend roda em:
+O backend deve rodar em:
 
 ```txt
 http://localhost:3001
 ```
 
-## Como rodar o frontend
+Teste no navegador:
 
-Em outro terminal, entre na pasta do frontend:
+```txt
+http://localhost:3001/api/clientes
+http://localhost:3001/api/planos
+http://localhost:3001/api/assinaturas
+http://localhost:3001/api/relatorios
+```
+
+---
+
+## 2. Crescimento estratégico com Python e Random Forest
+
+Abra outro terminal na raiz do projeto e entre na pasta do módulo preditivo:
+
+```bash
+cd ia
+```
+
+Crie o ambiente virtual usando Python 3.12:
+
+```bash
+py -3.12 -m venv .venv
+```
+
+Ative o ambiente virtual:
+
+```bash
+.venv\Scripts\activate
+```
+
+Confira a versão:
+
+```bash
+python -V
+```
+
+O esperado é algo como:
+
+```txt
+Python 3.12.1
+```
+
+Atualize o pip:
+
+```bash
+python -m pip install --upgrade pip
+```
+
+Instale as bibliotecas:
+
+```bash
+pip install -r requirements.txt
+```
+
+Treine o modelo:
+
+```bash
+python treinar_modelo.py
+```
+
+Esse comando gera/atualiza o arquivo:
+
+```txt
+modelo_random_forest.pkl
+```
+
+Depois, com o backend rodando, teste a rota de crescimento estratégico:
+
+```txt
+http://localhost:3001/api/ia/clientes
+```
+
+Se aparecer uma lista de clientes com risco de churn e propensão de compra, o módulo preditivo está funcionando.
+
+---
+
+## 3. Frontend Next.js
+
+Abra outro terminal na raiz do projeto e entre no frontend:
 
 ```bash
 cd frontend-next
@@ -84,95 +320,179 @@ Inicie o frontend:
 npm run dev
 ```
 
-O frontend roda em:
+O frontend deve rodar em:
 
 ```txt
 http://localhost:3000
 ```
 
-## Como rodar a parte de IA
-
-Entre na pasta da IA:
-
-```bash
-cd ia
-```
-
-Crie o ambiente virtual:
-
-```bash
-py -3.12 -m venv .venv
-```
-
-Ative o ambiente virtual:
-
-```bash
-.venv\Scripts\activate
-```
-
-Instale as dependências:
-
-```bash
-pip install -r requirements.txt
-```
-
-Treine o modelo:
-
-```bash
-python treinar_modelo.py
-```
-
-Depois inicie o backend normalmente.
-
-A tela de crescimento estratégico fica em:
+Telas principais:
 
 ```txt
+http://localhost:3000
+http://localhost:3000/clientes
+http://localhost:3000/planos
+http://localhost:3000/assinaturas
+http://localhost:3000/relatorios
 http://localhost:3000/ia
 ```
 
-A rota da API fica em:
+---
 
-```txt
-http://localhost:3001/api/ia/clientes
-```
+# Ordem recomendada para executar
 
-## Rotas principais
+1. Rodar o backend.
+2. Rodar o seed do banco.
+3. Preparar e treinar o módulo preditivo.
+4. Rodar o frontend.
+5. Testar `/api/relatorios`.
+6. Testar `/api/ia/clientes`.
+7. Abrir a tela `/ia` de crescimento estratégico no frontend.
+
+---
+
+## Scripts do backend
+
+| Comando | Função |
+|---|---|
+| `npm run dev` | Inicia o backend NestJS em modo desenvolvimento |
+| `npm run build` | Compila o backend TypeScript para `dist/` |
+| `npm run start` | Inicia o backend compilado |
+| `npm run db:migrate` | Roda as migrations do Prisma |
+| `npm run db:generate` | Gera o Prisma Client |
+| `npm run db:seed` | Popula o banco com dados iniciais |
+| `npm run db:studio` | Abre o Prisma Studio |
+| `npm run db:reset` | Reseta o banco e roda seed |
+| `npm run setup` | Instala, migra, gera client e popula o banco |
+| `npm run ia:train` | Treina o modelo Random Forest em Python |
+
+---
+
+## Rotas principais da API
+
+Todas as rotas usam o prefixo `/api`.
 
 ### Clientes
 
-```txt
-GET    /api/clientes
-POST   /api/clientes
-PUT    /api/clientes/:id
-DELETE /api/clientes/:id
-```
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/clientes` | Lista clientes |
+| GET | `/api/clientes/:id` | Busca cliente |
+| POST | `/api/clientes` | Cria cliente |
+| PUT | `/api/clientes/:id` | Atualiza cliente |
+| DELETE | `/api/clientes/:id` | Remove cliente |
 
 ### Planos
 
-```txt
-GET    /api/planos
-POST   /api/planos
-PUT    /api/planos/:id
-DELETE /api/planos/:id
-```
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/planos` | Lista planos |
+| GET | `/api/planos/:id` | Busca plano |
+| POST | `/api/planos` | Cria plano |
+| PUT | `/api/planos/:id` | Atualiza plano |
+| DELETE | `/api/planos/:id` | Remove plano |
 
 ### Assinaturas
 
-```txt
-GET    /api/assinaturas
-POST   /api/assinaturas
-PUT    /api/assinaturas/:id
-DELETE /api/assinaturas/:id
-```
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/assinaturas` | Lista assinaturas |
+| GET | `/api/assinaturas/:id` | Busca assinatura |
+| POST | `/api/assinaturas` | Cria assinatura |
+| PUT | `/api/assinaturas/:id` | Atualiza assinatura |
+| PUT | `/api/assinaturas/:id/cancelar` | Cancela assinatura |
+| PUT | `/api/assinaturas/:id/reativar` | Reativa assinatura |
+| DELETE | `/api/assinaturas/:id` | Remove assinatura |
 
 ### Relatórios
 
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/relatorios` | Retorna indicadores gerenciais |
+
+### Crescimento Estratégico com Random Forest
+
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/api/ia/clientes` | Retorna ranking estratégico com churn confirmado, risco de churn e potencial de crescimento |
+
+---
+
+## Explicação simples do módulo preditivo
+
+O módulo de crescimento estratégico usa um modelo **Random Forest** para gerar uma análise dos clientes.
+
+O módulo retorna:
+
+- clientes já cancelados como churn confirmado;
+- risco de churn para clientes ativos;
+- potencial de crescimento/upgrade;
+- classificação estratégica do cliente;
+- recomendação de ação comercial.
+
+Como a base do sistema é pequena, foi usado um conjunto de dados simples de treinamento em `ia/dados_treinamento.csv`. Esse conjunto serve para demonstrar o funcionamento do modelo e permitir a integração com o sistema web.
+
+O backend NestJS chama o script Python e retorna os dados para o frontend. Caso o Python não esteja configurado, existe uma regra simples de fallback para a rota não quebrar durante a demonstração.
+A tela de crescimento estratégico separa clientes ativos de clientes já cancelados. Clientes já cancelados aparecem como **Churn confirmado**, com recomendação de reativação. Clientes ativos recebem análise de risco de churn e oportunidade de upgrade.
+
+
+---
+
+## Tratamento de dados usado no módulo preditivo
+
+Antes do treinamento, os dados passam por tratamento simples:
+
+- leitura dos dados do CSV;
+- remoção de registros inválidos;
+- conversão de campos categóricos para valores numéricos;
+- separação das variáveis de entrada e saída;
+- treinamento com Random Forest.
+
+As principais informações usadas para a análise são:
+
+- quantidade de firewalls;
+- valor mensal;
+- ciclo da assinatura;
+- plano contratado;
+- status da assinatura;
+- histórico de cancelamento.
+
+---
+
+## Observações importantes para commit
+
+Não commitar:
+
 ```txt
-GET /api/relatorios
+node_modules/
+.venv/
+.env
+.env.local
+*.db
 ```
 
-### Crescimento estratégico
+Esses arquivos já estão no `.gitignore`.
 
-```txt
-GET /api/ia/clientes
+Antes de comitar, rode:
+
+```bash
+git status
+```
+
+Se aparecer `node_modules`, `.venv`, `.env` ou `dev.db`, revise o `.gitignore` antes do commit.
+
+---
+
+## Sugestão de commits
+
+```bash
+git add .
+git commit -m "feat: adiciona modulo de crescimento estrategico"
+git push origin main
+```
+
+Se a branch principal for `master`, use:
+
+```bash
+git push origin master
 ```

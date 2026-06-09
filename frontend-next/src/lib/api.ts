@@ -101,6 +101,9 @@ export interface ClienteIa {
   riscoChurn: number;
   propensaoCompra: number;
   classificacao: string;
+  situacaoEstrategica: string;
+  statusAnalise: string;
+  potencialCrescimento: string;
   recomendacao: string;
 }
 

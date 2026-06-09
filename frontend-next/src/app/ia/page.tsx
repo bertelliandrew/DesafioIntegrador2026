@@ -19,6 +19,14 @@ function percentual(valor: number | null) {
   return `${valor}%`;
 }
 
+function riscoTexto(cliente: RelatorioIa["clientes"][number]) {
+  if (cliente.statusAnalise === "Churn confirmado") {
+    return "Churn confirmado";
+  }
+
+  return `${cliente.riscoChurn}%`;
+}
+
 export default function IaPage() {
   const [relatorio, setRelatorio] = useState<RelatorioIa>(vazio);
   const [loading, setLoading] = useState(true);
@@ -43,18 +51,25 @@ export default function IaPage() {
     carregar();
   }, [carregar]);
 
-  const altoRisco = relatorio.clientes.filter((cliente) => cliente.riscoChurn >= 70).length;
-  const melhorCompra = [...relatorio.clientes].sort(
-    (a, b) => b.propensaoCompra - a.propensaoCompra,
-  )[0];
+  const clientesCancelados = relatorio.clientes.filter(
+    (cliente) => cliente.statusAnalise === "Churn confirmado",
+  ).length;
+
+  const clientesEmAtencao = relatorio.clientes.filter(
+    (cliente) => cliente.statusAnalise !== "Churn confirmado" && cliente.riscoChurn >= 70,
+  ).length;
+
+  const melhorOportunidade = [...relatorio.clientes].filter(
+    (cliente) => cliente.statusAnalise !== "Churn confirmado",
+  ).sort((a, b) => b.propensaoCompra - a.propensaoCompra)[0];
 
   return (
     <div>
       <div className="page-header">
         <h1>Crescimento estratégico</h1>
         <p>
-          Análise simples de clientes para estimar risco de churn e
-          oportunidades de compra ou upgrade.
+          Análise simples para identificar clientes cancelados, clientes em risco
+          e oportunidades de crescimento ou upgrade.
         </p>
       </div>
 
@@ -76,17 +91,24 @@ export default function IaPage() {
               <span className="metric-help">base cadastrada no sistema</span>
             </div>
             <div className="metric-card">
-              <span className="metric-label">Alto risco</span>
-              <strong className="metric-value">{altoRisco}</strong>
-              <span className="metric-help">clientes com risco acima de 70%</span>
+              <span className="metric-label">Clientes em atenção</span>
+              <strong className="metric-value">{clientesEmAtencao}</strong>
+              <span className="metric-help">ativos com risco acima de 70%</span>
             </div>
             <div className="metric-card">
-              <span className="metric-label">Maior chance de compra</span>
-              <strong className="metric-value" style={{ fontSize: "1.1rem" }}>
-                {melhorCompra?.nome || "Sem dados"}
-              </strong>
-              <span className="metric-help">cliente mais propenso a upgrade</span>
+              <span className="metric-label">Reativação</span>
+              <strong className="metric-value">{clientesCancelados}</strong>
+              <span className="metric-help">clientes com churn confirmado</span>
             </div>
+          </section>
+
+          <section className="card">
+            <h2 className="card-title">Melhor oportunidade comercial</h2>
+            <p className="muted">
+              {melhorOportunidade
+                ? `${melhorOportunidade.nome} possui potencial de crescimento ${melhorOportunidade.potencialCrescimento.toLowerCase()} e propensão de compra de ${melhorOportunidade.propensaoCompra}%.`
+                : "Sem clientes ativos suficientes para análise de upgrade."}
+            </p>
           </section>
 
           <section className="card">
@@ -99,7 +121,7 @@ export default function IaPage() {
           </section>
 
           <section className="card">
-            <h2 className="card-title">Ranking de clientes</h2>
+            <h2 className="card-title">Ranking estratégico de clientes</h2>
             {relatorio.clientes.length === 0 ? (
               <div className="empty-state">Nenhum cliente para analisar.</div>
             ) : (
@@ -109,10 +131,10 @@ export default function IaPage() {
                     <tr>
                       <th>Cliente</th>
                       <th>Estado</th>
-                      <th>Risco de churn</th>
-                      <th>Chance de compra</th>
-                      <th>Classificação</th>
-                      <th>Recomendação</th>
+                      <th>Situação estratégica</th>
+                      <th>Análise de churn</th>
+                      <th>Potencial de crescimento</th>
+                      <th>Ação recomendada</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -123,12 +145,20 @@ export default function IaPage() {
                           <div className="muted" style={{ fontSize: "0.78rem" }}>{cliente.email}</div>
                         </td>
                         <td>{cliente.estado}</td>
-                        <td>{cliente.riscoChurn}%</td>
-                        <td>{cliente.propensaoCompra}%</td>
+                        <td>{cliente.situacaoEstrategica}</td>
                         <td>
-                          <span className={cliente.riscoChurn >= 70 ? "status-canceled" : "status-active"}>
-                            {cliente.classificacao}
+                          <span className={cliente.statusAnalise === "Churn confirmado" || cliente.riscoChurn >= 70 ? "status-canceled" : "status-active"}>
+                            {cliente.statusAnalise}
                           </span>
+                          <div className="muted" style={{ fontSize: "0.78rem", marginTop: 4 }}>
+                            {riscoTexto(cliente)}
+                          </div>
+                        </td>
+                        <td>
+                          <strong>{cliente.potencialCrescimento}</strong>
+                          <div className="muted" style={{ fontSize: "0.78rem" }}>
+                            Propensão: {cliente.propensaoCompra}%
+                          </div>
                         </td>
                         <td>{cliente.recomendacao}</td>
                       </tr>

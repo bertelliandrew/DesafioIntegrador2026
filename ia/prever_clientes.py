@@ -23,14 +23,96 @@ def classificar(risco):
     return "Baixo risco"
 
 
-def recomendar(risco, compra):
-    if risco >= 70:
-        return "Entrar em contato e oferecer benefício para evitar cancelamento."
+def potencial(compra):
     if compra >= 70:
-        return "Cliente com boa chance de upgrade. Oferecer plano superior."
+        return "Alto"
+    if compra >= 40:
+        return "Médio"
+    return "Baixo"
+
+
+def ajustar_situacao(item, risco, compra):
+    cliente_cancelado = int(item.get("cliente_cancelado", 0)) == 1
+    assinaturas_ativas = int(item.get("assinaturas_ativas", 0) or 0)
+    assinaturas_canceladas = int(item.get("assinaturas_canceladas", 0) or 0)
+    ativo_com_historico = assinaturas_ativas > 0 and assinaturas_canceladas > 0
+
+    if cliente_cancelado:
+        return {
+            "riscoChurn": 100,
+            "propensaoCompra": min(compra, 35),
+            "classificacao": "Churn confirmado",
+            "situacaoEstrategica": "Cliente cancelado",
+            "statusAnalise": "Churn confirmado",
+            "potencialCrescimento": "Reativação",
+            "recomendacao": "Entrar em contato para tentar reativação com condição especial.",
+        }
+
+    if ativo_com_historico:
+        return {
+            "riscoChurn": risco,
+            "propensaoCompra": compra,
+            "classificacao": "Alto risco" if risco >= 70 else "Risco médio",
+            "situacaoEstrategica": "Cliente ativo em atenção",
+            "statusAnalise": "Alto risco de churn" if risco >= 70 else "Histórico de cancelamento",
+            "potencialCrescimento": potencial(compra),
+            "recomendacao": "Realizar contato preventivo e acompanhar satisfação do cliente.",
+        }
+
+    if compra >= 70 and risco < 60:
+        return {
+            "riscoChurn": risco,
+            "propensaoCompra": compra,
+            "classificacao": "Oportunidade de crescimento",
+            "situacaoEstrategica": "Oportunidade de crescimento",
+            "statusAnalise": "Baixo risco de churn",
+            "potencialCrescimento": "Alto",
+            "recomendacao": "Oferecer upgrade de plano ou pacote adicional de firewall.",
+        }
+
+    if risco >= 70:
+        return {
+            "riscoChurn": risco,
+            "propensaoCompra": compra,
+            "classificacao": "Alto risco",
+            "situacaoEstrategica": "Cliente em risco",
+            "statusAnalise": "Alto risco de churn",
+            "potencialCrescimento": potencial(compra),
+            "recomendacao": "Entrar em contato e oferecer benefício para evitar cancelamento.",
+        }
+
     if risco >= 40:
-        return "Acompanhar o cliente e verificar satisfação."
-    return "Manter relacionamento normal com o cliente."
+        return {
+            "riscoChurn": risco,
+            "propensaoCompra": compra,
+            "classificacao": "Risco médio",
+            "situacaoEstrategica": "Cliente em acompanhamento",
+            "statusAnalise": "Risco médio de churn",
+            "potencialCrescimento": potencial(compra),
+            "recomendacao": "Acompanhar o cliente e verificar satisfação.",
+        }
+
+    return {
+        "riscoChurn": risco,
+        "propensaoCompra": compra,
+        "classificacao": "Cliente estável",
+        "situacaoEstrategica": "Cliente estável",
+        "statusAnalise": "Baixo risco de churn",
+        "potencialCrescimento": potencial(compra),
+        "recomendacao": "Manter relacionamento e avaliar oferta futura de upgrade." if compra >= 50 else "Manter relacionamento normal com o cliente.",
+    }
+
+
+def prioridade(cliente):
+    if cliente["statusAnalise"] == "Churn confirmado":
+        return 4
+    if cliente["riscoChurn"] >= 70:
+        return 3
+    if cliente["propensaoCompra"] >= 70:
+        return 2
+    if cliente["riscoChurn"] >= 40:
+        return 1
+    return 0
 
 
 def main():
@@ -57,18 +139,16 @@ def main():
     for i, item in enumerate(entrada):
         risco = round(float(prob_churn[i]) * 100, 2)
         compra = round(float(prob_compra[i]) * 100, 2)
+        analise = ajustar_situacao(item, risco, compra)
         clientes.append({
             "clienteId": item.get("clienteId"),
             "nome": item.get("nome"),
             "email": item.get("email"),
             "estado": item.get("estado"),
-            "riscoChurn": risco,
-            "propensaoCompra": compra,
-            "classificacao": classificar(risco),
-            "recomendacao": recomendar(risco, compra),
+            **analise,
         })
 
-    clientes = sorted(clientes, key=lambda c: c["riscoChurn"], reverse=True)
+    clientes = sorted(clientes, key=lambda c: (prioridade(c), c["riscoChurn"], c["propensaoCompra"]), reverse=True)
 
     print(json.dumps({
         "modelo": "Random Forest",
