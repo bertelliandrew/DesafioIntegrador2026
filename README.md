@@ -61,33 +61,6 @@ python --version
 py -0
 ```
 
----
-
-## Corrigir registry do npm, caso necessário
-
-Se o `npm install` der erro de timeout ou tentar baixar pacote de um registry estranho, rode:
-
-```bash
-npm config set registry https://registry.npmjs.org/
-npm config delete proxy
-npm config delete https-proxy
-npm cache clean --force
-```
-
-Depois confira:
-
-```bash
-npm config get registry
-```
-
-O esperado é:
-
-```txt
-https://registry.npmjs.org/
-```
-
----
-
 ## Estrutura do projeto
 
 ```txt
