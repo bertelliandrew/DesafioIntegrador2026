@@ -460,8 +460,3 @@ As principais informações usadas para a análise são:
 
 
 
-Se a branch principal for `master`, use:
-
-```bash
-git push origin master
-```
